@@ -1,0 +1,41 @@
+# === Secretos: nunca al repo ===
+.env
+.env.*
+!.env.example
+
+# === Docs de estrategia/arquitectura: solo local (no revelar la app) ===
+AGENTS.md
+ARCHITECTURE.md
+TASKS.md
+PROMPTS.md
+README.md
+agent/
+
+# === Dependencias / builds ===
+node_modules/
+.pnpm-store/
+dist/
+.next/
+out/
+build/
+.turbo/
+
+# === Tauri / Rust ===
+apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/binaries/
+
+# === Python ===
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+
+# === Sistema / editor ===
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
