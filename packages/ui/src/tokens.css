@@ -1,0 +1,36 @@
+/* Ultrathing — tema negro / dorado. Fuente de verdad del color. */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&display=swap');
+
+:root {
+  /* Fondos: negro profundo con capas */
+  --bg-base:      #0A0A0B;   /* lienzo de la app */
+  --bg-surface:   #141416;   /* tarjetas */
+  --bg-elevated:  #1C1C20;   /* menús, modales */
+  --bg-hover:     #232329;
+
+  /* Dorado: el acento de la marca */
+  --gold:         #E5B94E;   /* base */
+  --gold-bright:  #F5D06F;   /* hover / brillo */
+  --gold-deep:    #B8912F;   /* bordes activos */
+  --gold-glow:    rgba(229,185,78,0.14); /* halo sutil */
+
+  /* Texto */
+  --text:         #F7F7F5;   /* blanco cálido principal */
+  --text-muted:   #A1A1AA;   /* secundario */
+  --text-faint:   #6B6B72;   /* pistas / placeholders */
+  --on-gold:      #0A0A0B;   /* texto sobre botones dorados */
+
+  /* Bordes y estados */
+  --border:       rgba(255,255,255,0.08);
+  --border-strong:rgba(255,255,255,0.16);
+  --success:      #4ADE80;
+  --danger:       #F87171;
+  --warning:      #FBBF24;
+
+  /* Tipografía y forma */
+  --font-display: 'Space Grotesk', sans-serif;  /* títulos, techy */
+  --font-sans:    'Inter', sans-serif;           /* cuerpo, moderno */
+  --radius:       12px;
+}
+
+body { background: var(--bg-base); color: var(--text); font-family: var(--font-sans); }

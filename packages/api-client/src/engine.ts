@@ -1,0 +1,27 @@
+import { Job } from '@ultrathing/core';
+
+const BASE = 'http://127.0.0.1:8787';
+
+async function post<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Engine ${res.status}`);
+  return res.json() as Promise<T>;
+}
+
+/** Escucha el progreso de un job por SSE. Devuelve una función para cancelar. */
+export function streamJob(id: string, onUpdate: (job: Job) => void): () => void {
+  const es = new EventSource(`${BASE}/jobs/${id}/stream`);
+  es.onmessage = (e) => onUpdate(Job.parse(JSON.parse(e.data)));
+  return () => es.close();
+}
+
+/** Cliente tipado del motor. Solo lo usa el escritorio (surface: desktop). */
+export const engineClient = {
+  downloader: {
+    start: (url: string) => post<{ job_id: string }>('/modules/downloader/start', { url }),
+  },
+};
