@@ -7,5 +7,9 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
     "@ultrathing/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
   }
 }

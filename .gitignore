@@ -33,6 +33,12 @@ venv/
 .mypy_cache/
 .ruff_cache/
 
+# === Caché de TypeScript ===
+*.tsbuildinfo
+
+# El .gitignore global del usuario excluye el lockfile; este repo SÍ lo versiona.
+!pnpm-lock.yaml
+
 # === Sistema / editor ===
 .DS_Store
 Thumbs.db
