@@ -39,6 +39,10 @@ venv/
 # El .gitignore global del usuario excluye el lockfile; este repo SÍ lo versiona.
 !pnpm-lock.yaml
 
+# El global excluye supabase/; versionamos las migraciones (DDL, sin secretos).
+!supabase/
+!supabase/**
+
 # === Sistema / editor ===
 .DS_Store
 Thumbs.db
