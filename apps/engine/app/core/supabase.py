@@ -1,5 +1,6 @@
 """Cliente Supabase del motor (service role). Persiste resultados a nombre del usuario."""
 from functools import lru_cache
+from typing import Any
 
 from supabase import Client, create_client
 
@@ -25,4 +26,27 @@ def insert_download(user_id: str, title: str, filepath: str, ext: str) -> None:
     """Inserta la fila de descarga ligada al usuario (service role, user_id explícito)."""
     _client().table("downloads").insert(
         {"user_id": user_id, "title": title, "filepath": filepath, "ext": ext}
+    ).execute()
+
+
+def upsert_job(
+    job_id: str,
+    user_id: str,
+    module: str,
+    status: str,
+    progress: float,
+    result: Any | None = None,
+    error: str | None = None,
+) -> None:
+    """Espeja el estado de un job en la tabla `jobs` para que la web lo vea por Realtime."""
+    _client().table("jobs").upsert(
+        {
+            "id": job_id,
+            "user_id": user_id,
+            "module": module,
+            "status": status,
+            "progress": progress,
+            "result": result,
+            "error": error,
+        }
     ).execute()

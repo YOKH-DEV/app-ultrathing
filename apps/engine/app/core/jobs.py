@@ -6,11 +6,14 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
+from app.core.supabase import upsert_job
+
 
 @dataclass
 class Job:
     id: str
     module: str
+    user_id: str | None = None
     status: str = "queued"       # queued | running | done | error
     progress: float = 0.0
     result: Any | None = None
@@ -20,6 +23,7 @@ class Job:
     def snapshot(self) -> dict[str, Any]:
         d = asdict(self)
         d.pop("_queue")
+        d.pop("user_id")  # el contrato del stream no expone el dueño
         return d
 
 
@@ -29,14 +33,27 @@ Handler = Callable[["Job", Callable[[float], None]], Awaitable[Any]]
 _jobs: dict[str, Job] = {}
 
 
-def create_job(module: str) -> Job:
-    job = Job(id=uuid.uuid4().hex[:12], module=module)
+def create_job(module: str, user_id: str | None = None) -> Job:
+    job = Job(id=uuid.uuid4().hex[:12], module=module, user_id=user_id)
     _jobs[job.id] = job
     return job
 
 
 def get_job(job_id: str) -> Job | None:
     return _jobs.get(job_id)
+
+
+async def _mirror(job: Job) -> None:
+    """Espeja el estado a Supabase. Nunca tumba el job si Supabase falla."""
+    if not job.user_id:
+        return
+    result = job.result if job.status == "done" else None
+    try:
+        await asyncio.to_thread(
+            upsert_job, job.id, job.user_id, job.module, job.status, job.progress, result, job.error
+        )
+    except Exception:  # noqa: BLE001 — el espejo es best-effort
+        pass
 
 
 async def run_job(job: Job, handler: Handler) -> None:
@@ -47,12 +64,14 @@ async def run_job(job: Job, handler: Handler) -> None:
 
     job.status = "running"
     report(0)
+    await _mirror(job)
     try:
         job.result = await handler(job, report)
         job.status = "done"
     except Exception as exc:  # noqa: BLE001 — se reporta al cliente, no se traga
         job.status, job.error = "error", str(exc)
     report(job.progress)
+    await _mirror(job)
     job._queue.put_nowait(None)  # centinela de fin
 
 
