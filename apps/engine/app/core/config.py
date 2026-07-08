@@ -1,6 +1,13 @@
 """Configuración central del motor. Todo por variables de entorno."""
 import os
 from dataclasses import dataclass
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+# El .env.local vive en la raíz del monorepo (mismas claves que web/escritorio).
+_ROOT = Path(__file__).resolve().parents[4]
+load_dotenv(_ROOT / ".env.local")
 
 
 @dataclass(frozen=True)

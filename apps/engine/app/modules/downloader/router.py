@@ -1,7 +1,7 @@
 """Expone el módulo. El registro lo monta solo si existe la variable `router`."""
 import asyncio
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Header
 
 from app.core.jobs import create_job, run_job
 from .schemas import StartDownload
@@ -11,10 +11,13 @@ router = APIRouter(prefix="/modules/downloader", tags=["downloader"])
 
 
 @router.post("/start")
-async def start(body: StartDownload) -> dict[str, str]:
+async def start(
+    body: StartDownload, authorization: str | None = Header(default=None)
+) -> dict[str, str]:
+    token = authorization.removeprefix("Bearer ").strip() if authorization else None
     job = create_job(module="downloader")
     # Se lanza en segundo plano: devolvemos el id al instante, la UI escucha por SSE.
     asyncio.create_task(
-        run_job(job, lambda j, report: download(str(body.url), report)),
+        run_job(job, lambda j, report: download(str(body.url), report, token)),
     )
     return {"job_id": job.id}
