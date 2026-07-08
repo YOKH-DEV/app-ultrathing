@@ -1,10 +1,31 @@
 import { useState } from 'react';
 import { ModuleCard, Button, Card } from '@ultrathing/ui';
 import { featuresFor } from '@ultrathing/core';
-import { engineClient, streamJob } from '@ultrathing/api-client';
+import {
+  engineClient,
+  streamJob,
+  signOut,
+  useSession,
+  type Session,
+} from '@ultrathing/api-client';
+import { LoginScreen } from './auth/LoginScreen';
 import './features';
 
 export default function App() {
+  const { session, loading } = useSession();
+
+  if (loading) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-base">
+        <p className="text-sm text-text-muted">Cargando…</p>
+      </main>
+    );
+  }
+  if (!session) return <LoginScreen />;
+  return <Dashboard session={session} />;
+}
+
+function Dashboard({ session }: { session: Session }) {
   const features = featuresFor('desktop');
   const [progress, setProgress] = useState<number | null>(null);
   const [url, setUrl] = useState('');
@@ -20,11 +41,19 @@ export default function App() {
 
   return (
     <main className="min-h-screen bg-base p-8">
-      <header className="mb-8">
-        <h1 className="font-display text-2xl text-text">
-          Ultra<span className="text-gold">thing</span>
-        </h1>
-        <p className="text-sm text-text-muted">Tu centro de comando de marketing.</p>
+      <header className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="font-display text-2xl text-text">
+            Ultra<span className="text-gold">thing</span>
+          </h1>
+          <p className="text-sm text-text-muted">Tu centro de comando de marketing.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-text-faint">{session.user.email}</span>
+          <Button variant="ghost" size="sm" onClick={() => signOut()}>
+            Salir
+          </Button>
+        </div>
       </header>
 
       <section className="grid grid-cols-2 gap-4 md:grid-cols-4">
