@@ -11,21 +11,24 @@ import {
 import { LoginScreen } from './auth/LoginScreen';
 import './features';
 
+// Bypass temporal de auth mientras se construyen los módulos — reactivar antes de shipear.
+const SKIP_AUTH_DURING_DEV = true;
+
 export default function App() {
   const { session, loading } = useSession();
 
-  if (loading) {
+  if (loading && !SKIP_AUTH_DURING_DEV) {
     return (
       <main className="grid min-h-screen place-items-center bg-base">
         <p className="text-sm text-text-muted">Cargando…</p>
       </main>
     );
   }
-  if (!session) return <LoginScreen />;
+  if (!session && !SKIP_AUTH_DURING_DEV) return <LoginScreen />;
   return <Dashboard session={session} />;
 }
 
-function Dashboard({ session }: { session: Session }) {
+function Dashboard({ session }: { session: Session | null }) {
   const features = featuresFor('desktop');
   const [progress, setProgress] = useState<number | null>(null);
   const [url, setUrl] = useState('');
@@ -48,12 +51,14 @@ function Dashboard({ session }: { session: Session }) {
           </h1>
           <p className="text-sm text-text-muted">Tu centro de comando de marketing.</p>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-text-faint">{session.user.email}</span>
-          <Button variant="ghost" size="sm" onClick={() => signOut()}>
-            Salir
-          </Button>
-        </div>
+        {session && (
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-text-faint">{session.user.email}</span>
+            <Button variant="ghost" size="sm" onClick={() => signOut()}>
+              Salir
+            </Button>
+          </div>
+        )}
       </header>
 
       <section className="grid grid-cols-2 gap-4 md:grid-cols-4">
