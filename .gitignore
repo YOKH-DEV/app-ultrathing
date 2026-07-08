@@ -10,6 +10,7 @@ TASKS.md
 PROMPTS.md
 README.md
 agent/
+docs/
 
 # === Dependencias / builds ===
 node_modules/
