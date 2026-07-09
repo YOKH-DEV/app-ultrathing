@@ -14,6 +14,7 @@ class Job:
     id: str
     module: str
     user_id: str | None = None
+    token: str | None = None     # para espejar a Supabase autenticado como el usuario
     status: str = "queued"       # queued | running | done | error
     progress: float = 0.0
     result: Any | None = None
@@ -24,6 +25,7 @@ class Job:
         d = asdict(self)
         d.pop("_queue")
         d.pop("user_id")  # el contrato del stream no expone el dueño
+        d.pop("token")
         return d
 
 
@@ -33,8 +35,8 @@ Handler = Callable[["Job", Callable[[float], None]], Awaitable[Any]]
 _jobs: dict[str, Job] = {}
 
 
-def create_job(module: str, user_id: str | None = None) -> Job:
-    job = Job(id=uuid.uuid4().hex[:12], module=module, user_id=user_id)
+def create_job(module: str, user_id: str | None = None, token: str | None = None) -> Job:
+    job = Job(id=uuid.uuid4().hex[:12], module=module, user_id=user_id, token=token)
     _jobs[job.id] = job
     return job
 
@@ -45,12 +47,20 @@ def get_job(job_id: str) -> Job | None:
 
 async def _mirror(job: Job) -> None:
     """Espeja el estado a Supabase. Nunca tumba el job si Supabase falla."""
-    if not job.user_id:
+    if not job.user_id or not job.token:
         return
     result = job.result if job.status == "done" else None
     try:
         await asyncio.to_thread(
-            upsert_job, job.id, job.user_id, job.module, job.status, job.progress, result, job.error
+            upsert_job,
+            job.token,
+            job.id,
+            job.user_id,
+            job.module,
+            job.status,
+            job.progress,
+            result,
+            job.error,
         )
     except Exception:  # noqa: BLE001 — el espejo es best-effort
         pass

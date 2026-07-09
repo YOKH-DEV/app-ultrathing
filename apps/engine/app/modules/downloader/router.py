@@ -23,9 +23,9 @@ async def start(
         except Exception:  # noqa: BLE001 — sin usuario válido no persistimos, pero sí descargamos
             user_id = None
 
-    job = create_job(module="downloader", user_id=user_id)
+    job = create_job(module="downloader", user_id=user_id, token=token if user_id else None)
     # Se lanza en segundo plano: devolvemos el id al instante, la UI escucha por SSE.
     asyncio.create_task(
-        run_job(job, lambda j, report: download(str(body.url), report, user_id)),
+        run_job(job, lambda j, report: download(str(body.url), report, user_id, token)),
     )
     return {"job_id": job.id}

@@ -33,6 +33,7 @@ venv/
 *.egg-info/
 .mypy_cache/
 .ruff_cache/
+*.spec
 
 # === Caché de TypeScript ===
 *.tsbuildinfo

@@ -5,7 +5,9 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# El .env.local vive en la raíz del monorepo (mismas claves que web/escritorio).
+# El .env.local vive en la raíz del monorepo (mismas claves que web/escritorio). En el
+# binario empaquetado (PyInstaller) __file__ apunta a una carpeta temporal, así que esto
+# no encuentra nada — es un no-op seguro, y por eso los defaults de abajo cubren ese caso.
 _ROOT = Path(__file__).resolve().parents[4]
 load_dotenv(_ROOT / ".env.local")
 
@@ -13,8 +15,15 @@ load_dotenv(_ROOT / ".env.local")
 @dataclass(frozen=True)
 class Settings:
     port: int = int(os.getenv("ENGINE_PORT", "8787"))
-    supabase_url: str = os.getenv("SUPABASE_URL", "")
-    supabase_key: str = os.getenv("SUPABASE_SERVICE_KEY", "")
+    # URL y anon key son públicas por diseño (mismas que ya viajan en el bundle de
+    # web/escritorio) — está bien tenerlas como default fijo para que el motor
+    # empaquetado funcione sin depender de un .env.local que no existe en la
+    # máquina del cliente. El motor NUNCA usa la service_role key (ver supabase.py).
+    supabase_url: str = os.getenv("SUPABASE_URL", "https://vgtwylbmefujgvhsgrre.supabase.co")
+    supabase_anon_key: str = os.getenv(
+        "SUPABASE_ANON_KEY",
+        os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "sb_publishable_NYILSb0ci4kxI6J1Y3e-Xw_pErjjeOO"),
+    )
     download_dir: str = os.getenv("DOWNLOAD_DIR", os.path.expanduser("~/Ultrathing"))
 
 

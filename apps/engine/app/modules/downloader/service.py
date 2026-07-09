@@ -31,18 +31,21 @@ def _download(url: str, on_progress: Callable[[float], None]) -> DownloadResult:
         )
 
 
-def _persist(user_id: str, result: DownloadResult) -> None:
-    insert_download(user_id, result.title, result.filepath, result.ext)
+def _persist(token: str, user_id: str, result: DownloadResult) -> None:
+    insert_download(token, user_id, result.title, result.filepath, result.ext)
 
 
 async def download(
-    url: str, report: Callable[[float], None], user_id: str | None = None
+    url: str,
+    report: Callable[[float], None],
+    user_id: str | None = None,
+    token: str | None = None,
 ) -> dict[str, Any]:
     """Corre la descarga bloqueante en un hilo para no frenar el loop async.
 
-    Si hay usuario, persiste la fila en `downloads` a su nombre.
+    Si hay usuario, persiste la fila en `downloads` a su nombre (autenticado con su token).
     """
     result = await asyncio.to_thread(_download, url, report)
-    if user_id:
-        await asyncio.to_thread(_persist, user_id, result)
+    if user_id and token:
+        await asyncio.to_thread(_persist, token, user_id, result)
     return result.model_dump()
