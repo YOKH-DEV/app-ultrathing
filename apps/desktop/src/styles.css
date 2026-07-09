@@ -1,0 +1,3 @@
+@import '@ultrathing/ui/tokens.css';
+@import 'tailwindcss';
+@config '../tailwind.config.js';

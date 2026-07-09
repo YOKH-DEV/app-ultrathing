@@ -10,6 +10,7 @@ TASKS.md
 PROMPTS.md
 README.md
 agent/
+docs/
 
 # === Dependencias / builds ===
 node_modules/
@@ -32,6 +33,17 @@ venv/
 *.egg-info/
 .mypy_cache/
 .ruff_cache/
+*.spec
+
+# === Caché de TypeScript ===
+*.tsbuildinfo
+
+# El .gitignore global del usuario excluye el lockfile; este repo SÍ lo versiona.
+!pnpm-lock.yaml
+
+# El global excluye supabase/; versionamos las migraciones (DDL, sin secretos).
+!supabase/
+!supabase/**
 
 # === Sistema / editor ===
 .DS_Store
