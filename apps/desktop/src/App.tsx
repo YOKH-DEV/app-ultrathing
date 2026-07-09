@@ -31,15 +31,23 @@ export default function App() {
 function Dashboard({ session }: { session: Session | null }) {
   const features = featuresFor('desktop');
   const [progress, setProgress] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [url, setUrl] = useState('');
 
   async function handleDownload() {
     setProgress(0);
-    const { job_id } = await engineClient.downloader.start(url);
-    const stop = streamJob(job_id, (job) => {
-      setProgress(job.progress);
-      if (job.status === 'done' || job.status === 'error') stop();
-    });
+    setError(null);
+    try {
+      const { job_id } = await engineClient.downloader.start(url);
+      const stop = streamJob(job_id, (job) => {
+        setProgress(job.progress);
+        if (job.status === 'error') setError(job.error ?? 'La descarga falló.');
+        if (job.status === 'done' || job.status === 'error') stop();
+      });
+    } catch {
+      setProgress(null);
+      setError('No se pudo conectar con el motor.');
+    }
   }
 
   return (
@@ -76,13 +84,16 @@ function Dashboard({ session }: { session: Session | null }) {
             placeholder="Pega una URL…"
             className="h-10 flex-1 rounded border border-line bg-elevated px-3 text-sm text-text outline-none focus:border-gold"
           />
-          <Button onClick={handleDownload}>Descargar</Button>
+          <Button onClick={handleDownload} disabled={!url.trim()}>
+            Descargar
+          </Button>
         </div>
         {progress !== null && (
           <div className="mt-3 h-1.5 w-full overflow-hidden rounded bg-elevated">
             <div className="h-full bg-gold transition-all" style={{ width: `${progress}%` }} />
           </div>
         )}
+        {error && <p className="mt-3 text-sm text-[var(--danger)]">{error}</p>}
       </Card>
     </main>
   );
