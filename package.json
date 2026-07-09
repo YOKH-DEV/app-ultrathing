@@ -7,8 +7,8 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "engine": "cd apps/engine && uvicorn app.main:app --reload --port 8787",
-    "db:types": "supabase gen types typescript --local > packages/core/src/database.types.ts"
+    "engine": "cd apps/engine && .venv/bin/uvicorn app.main:app --reload --port 8787",
+    "db:types": "supabase gen types typescript --project-id \"$SUPABASE_PROJECT_ID\" --schema public > packages/core/src/database.types.ts"
   },
   "devDependencies": {
     "turbo": "^2.1.0",

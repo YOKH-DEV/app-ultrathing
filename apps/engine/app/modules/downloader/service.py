@@ -6,6 +6,7 @@ from typing import Any
 from yt_dlp import YoutubeDL
 
 from app.core.config import settings
+from app.core.supabase import insert_download
 from .schemas import DownloadResult
 
 
@@ -30,7 +31,21 @@ def _download(url: str, on_progress: Callable[[float], None]) -> DownloadResult:
         )
 
 
-async def download(url: str, report: Callable[[float], None]) -> dict[str, Any]:
-    """Corre la descarga bloqueante en un hilo para no frenar el loop async."""
+def _persist(token: str, user_id: str, result: DownloadResult) -> None:
+    insert_download(token, user_id, result.title, result.filepath, result.ext)
+
+
+async def download(
+    url: str,
+    report: Callable[[float], None],
+    user_id: str | None = None,
+    token: str | None = None,
+) -> dict[str, Any]:
+    """Corre la descarga bloqueante en un hilo para no frenar el loop async.
+
+    Si hay usuario, persiste la fila en `downloads` a su nombre (autenticado con su token).
+    """
     result = await asyncio.to_thread(_download, url, report)
+    if user_id and token:
+        await asyncio.to_thread(_persist, token, user_id, result)
     return result.model_dump()
