@@ -9,23 +9,24 @@
     "tauri": "tauri"
   },
   "dependencies": {
-    "@ultrathing/ui": "workspace:*",
-    "@ultrathing/core": "workspace:*",
-    "@ultrathing/api-client": "workspace:*",
     "@tanstack/react-query": "^5.56.0",
+    "@ultrathing/api-client": "workspace:*",
+    "@ultrathing/core": "workspace:*",
+    "@ultrathing/ui": "workspace:*",
     "lucide-react": "^0.446.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.18.1"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.0.0",
     "@tailwindcss/vite": "^4.0.0",
-    "@vitejs/plugin-react": "^4.3.0",
+    "@tauri-apps/cli": "^2.0.0",
     "@types/node": "^22.0.0",
-    "tailwindcss": "^4.0.0",
-    "typescript": "^5.6.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.6.0",
     "vite": "^5.4.0"
   }
 }
