@@ -49,4 +49,11 @@ export const engineClient = {
       return postForm<{ job_id: string }>('/modules/image/remove-bg', form);
     },
   },
+  files: {
+    pdfToCsv: (file: File) => {
+      const form = new FormData();
+      form.append('file', file);
+      return postForm<{ job_id: string }>('/modules/files/pdf-to-csv', form);
+    },
+  },
 };

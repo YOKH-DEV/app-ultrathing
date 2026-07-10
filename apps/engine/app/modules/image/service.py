@@ -7,18 +7,9 @@ from typing import Any
 from rembg import remove
 
 from app.core.config import settings
+from app.core.paths import unique_path
 from app.core.supabase import insert_asset
 from .schemas import RemoveBgResult
-
-
-def _unique_path(directory: Path, stem: str, ext: str) -> Path:
-    """Devuelve una ruta libre, agregando -1, -2… si el nombre ya existe."""
-    candidate = directory / f"{stem}.{ext}"
-    n = 1
-    while candidate.exists():
-        candidate = directory / f"{stem}-{n}.{ext}"
-        n += 1
-    return candidate
 
 
 def _remove_bg(data: bytes, filename: str, on_progress: Callable[[float], None]) -> RemoveBgResult:
@@ -29,7 +20,7 @@ def _remove_bg(data: bytes, filename: str, on_progress: Callable[[float], None])
     out_dir = Path(settings.download_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     stem = f"{Path(filename).stem or 'imagen'}-sinfondo"
-    out_path = _unique_path(out_dir, stem, "png")
+    out_path = unique_path(out_dir, stem, "png")
     out_path.write_bytes(output)
 
     on_progress(100)
