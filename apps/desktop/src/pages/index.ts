@@ -1,5 +1,6 @@
 import { type ComponentType } from 'react';
 import { DownloaderPage } from './DownloaderPage';
+import { ImagePage } from './ImagePage';
 
 /**
  * Páginas de módulos ya construidos, indexadas por `route`.
@@ -7,4 +8,5 @@ import { DownloaderPage } from './DownloaderPage';
  */
 export const pageByRoute: Record<string, ComponentType> = {
   '/downloader': DownloaderPage,
+  '/image': ImagePage,
 };

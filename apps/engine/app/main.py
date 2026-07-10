@@ -8,10 +8,15 @@ from app.core.registry import discover_routers
 
 app = FastAPI(title="Ultrathing Engine")
 
-# La UI (web/escritorio) corre en localhost; solo se permite ese origen.
+# La UI (web/escritorio) corre en localhost; solo se permiten esos orígenes.
+# web dev :3100 · escritorio Vite :1420 · escritorio empaquetado tauri://localhost
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "tauri://localhost"],
+    allow_origins=[
+        "http://localhost:3100",
+        "http://localhost:1420",
+        "tauri://localhost",
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )

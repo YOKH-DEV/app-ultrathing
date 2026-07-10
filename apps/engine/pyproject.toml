@@ -9,7 +9,10 @@ dependencies = [
   "python-dotenv>=1.0",
   "yt-dlp>=2024.8",
   "supabase>=2.7",
-  # Fase 2+: "rembg", "playwright", "pandas"
+  "python-multipart>=0.0.9",
+  "rembg[cpu]>=2.0",
+  "pillow>=10.0",
+  # Fase 3+: "playwright", "pandas"
 ]
 
 [tool.ruff]
