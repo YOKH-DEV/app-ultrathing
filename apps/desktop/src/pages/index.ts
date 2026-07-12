@@ -3,6 +3,7 @@ import { DownloaderPage } from './DownloaderPage';
 import { ImagePage } from './ImagePage';
 import { FilesPage } from './FilesPage';
 import { ScraperPage } from './ScraperPage';
+import { LeadsPage } from './LeadsPage';
 
 /**
  * Páginas de módulos ya construidos, indexadas por `route`.
@@ -13,4 +14,5 @@ export const pageByRoute: Record<string, ComponentType> = {
   '/image': ImagePage,
   '/files': FilesPage,
   '/scraper': ScraperPage,
+  '/leads': LeadsPage,
 };

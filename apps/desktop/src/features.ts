@@ -1,4 +1,4 @@
-import { Download, Image, FileText, Search, PenLine } from 'lucide-react';
+import { Download, Image, FileText, Search, PenLine, Users } from 'lucide-react';
 import { registerFeature } from '@ultrathing/core';
 
 // Registro de features. El `surface` decide dónde aparece cada uno.
@@ -15,4 +15,5 @@ export const downloader = registerFeature({
 registerFeature({ id: 'image', name: 'Imagen', description: 'Quita fondos y mejora fotos.', icon: Image, surface: 'desktop', route: '/image' });
 registerFeature({ id: 'files', name: 'Archivos', description: 'Convierte PDF con tablas a CSV.', icon: FileText, surface: 'desktop', route: '/files' });
 registerFeature({ id: 'scraper', name: 'Scraper', description: 'Extrae leads desde la web.', icon: Search, surface: 'desktop', route: '/scraper' });
+registerFeature({ id: 'leads', name: 'Leads', description: 'Contactos extraídos, en vivo.', icon: Users, surface: 'desktop', route: '/leads' });
 registerFeature({ id: 'copywriter', name: 'Copywriter', description: 'Genera copy con IA.', icon: PenLine, surface: 'both', route: '/copywriter' });

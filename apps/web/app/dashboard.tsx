@@ -4,6 +4,7 @@ import { StatCard, Button } from '@ultrathing/ui';
 import { featuresFor } from '@ultrathing/core';
 import { signOut, type Session } from '@ultrathing/api-client';
 import { JobsCounter } from './jobs-counter';
+import { LeadsList } from './leads-list';
 
 /** Panel de solo lectura. Muestra métricas; el "Jobs activos" es en vivo. */
 export function Dashboard({ session }: { session: Session | null }) {
@@ -29,6 +30,7 @@ export function Dashboard({ session }: { session: Session | null }) {
         <JobsCounter />
         <StatCard label="Módulos" value={String(webFeatures.length)} />
       </section>
+      <LeadsList />
     </main>
   );
 }
