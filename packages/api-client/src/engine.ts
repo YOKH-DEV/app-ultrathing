@@ -56,4 +56,7 @@ export const engineClient = {
       return postForm<{ job_id: string }>('/modules/files/pdf-to-csv', form);
     },
   },
+  scraper: {
+    start: (url: string) => post<{ job_id: string }>('/modules/scraper/start', { url }),
+  },
 };

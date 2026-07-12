@@ -51,6 +51,28 @@ def insert_asset(
     ).execute()
 
 
+def insert_lead(
+    token: str,
+    user_id: str,
+    source: str,
+    name: str | None,
+    phone: str | None,
+    email: str | None,
+    meta: dict[str, Any],
+) -> None:
+    """Inserta un lead extraído (módulo scraper) a nombre del usuario dueño del token."""
+    _client_as(token).table("leads").insert(
+        {
+            "user_id": user_id,
+            "source": source,
+            "name": name,
+            "phone": phone,
+            "email": email,
+            "meta": meta,
+        }
+    ).execute()
+
+
 def upsert_job(
     token: str,
     job_id: str,
