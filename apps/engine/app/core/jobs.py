@@ -19,7 +19,8 @@ class Job:
     progress: float = 0.0
     result: Any | None = None
     error: str | None = None
-    _queue: asyncio.Queue = field(default_factory=asyncio.Queue, repr=False)
+    # La cola transporta snapshots (dict) en cada progreso y `None` como centinela de fin.
+    _queue: asyncio.Queue[dict[str, Any] | None] = field(default_factory=asyncio.Queue, repr=False)
 
     def snapshot(self) -> dict[str, Any]:
         # Se arma explícito (no con asdict): asdict hace deepcopy de todos los campos,
