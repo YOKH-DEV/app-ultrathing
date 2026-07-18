@@ -22,6 +22,26 @@ pub fn run() {
       // solo Vite (`pnpm dev`, sin ventana nativa) no pasa por acá.
       let (_events, child) = app.shell().sidecar("ultrathing-engine")?.spawn()?;
       *app.state::<EngineProcess>().0.lock().unwrap() = Some(child);
+
+      // En Linux (WebKitGTK) el micrófono/cámara están bloqueados por defecto: hay que
+      // habilitar el media-stream y aceptar la petición de permiso (getUserMedia del
+      // módulo voz). En Windows/macOS el webview usa el permiso del sistema, no hace falta.
+      #[cfg(target_os = "linux")]
+      {
+        use webkit2gtk::{PermissionRequestExt, SettingsExt, WebViewExt};
+        if let Some(window) = app.get_webview_window("main") {
+          let _ = window.with_webview(|webview| {
+            let wv = webview.inner();
+            if let Some(settings) = WebViewExt::settings(&wv) {
+              settings.set_enable_media_stream(true);
+            }
+            wv.connect_permission_request(|_wv, req| {
+              req.allow();
+              true
+            });
+          });
+        }
+      }
       Ok(())
     })
     .on_window_event(|window, event| {

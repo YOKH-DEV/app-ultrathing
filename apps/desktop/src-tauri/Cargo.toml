@@ -24,3 +24,8 @@ log = "0.4"
 tauri = { version = "2.11.3", features = [] }
 tauri-plugin-log = "2"
 tauri-plugin-shell = "2.3.5"
+
+# Linux: acceso al webview WebKitGTK para habilitar micrófono/cámara (getUserMedia),
+# bloqueado por defecto en WebKitGTK. Versión fijada a la que ya usa wry.
+[target."cfg(target_os = \"linux\")".dependencies]
+webkit2gtk = "=2.0.2"
