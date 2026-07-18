@@ -31,10 +31,12 @@ class Settings:
     zai_api_key: str = os.getenv("ZAI_API_KEY", "")
     zai_base_url: str = os.getenv("ZAI_BASE_URL", "https://api.z.ai/api/paas/v4")
     zai_model: str = os.getenv("ZAI_MODEL", "glm-4.6")
-    # Modelo de faster-whisper para el módulo voz (tiny/base/small/medium). Se descarga
-    # solo la 1a vez. 'small' da buena precisión en español manteniéndose cerca de
-    # tiempo real en CPU (elección del usuario 2026-07-18).
+    # Modelos de faster-whisper (tiny/base/small/medium). Se descargan solo la 1a vez.
+    # `whisper_model` = preciso (pases completos). `whisper_live_model` = rápido, para el
+    # dictado EN VIVO: tiny transcribe muy por debajo de tiempo real en CPU, así el texto
+    # aparece "mientras hablas" sin que la cola se atrase.
     whisper_model: str = os.getenv("WHISPER_MODEL", "small")
+    whisper_live_model: str = os.getenv("WHISPER_LIVE_MODEL", "tiny")
 
 
 settings = Settings()

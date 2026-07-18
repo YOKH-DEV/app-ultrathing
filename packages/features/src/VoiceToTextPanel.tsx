@@ -40,7 +40,7 @@ function encodeWav(samples: Float32Array, sampleRate: number): Blob {
   return new Blob([buffer], { type: 'audio/wav' });
 }
 
-const FLUSH_MS = 4000; // cada cuánto se manda un trozo al motor durante el dictado
+const FLUSH_MS = 1500; // cada cuánto se manda un trozo al motor: corto = casi en vivo
 
 const LANGS: { value: string; label: string }[] = [
   { value: 'es', label: 'Español' },
@@ -52,7 +52,7 @@ const LANGS: { value: string; label: string }[] = [
 ];
 
 const selectClass =
-  'h-9 rounded border border-line bg-elevated px-2 text-sm text-text outline-none focus:border-gold';
+  'h-9 cursor-pointer rounded border border-[var(--gold-deep)] bg-gold px-2 text-sm font-medium text-[var(--on-gold)] outline-none focus:border-[var(--gold-bright)]';
 
 /**
  * Dictado por voz → texto EN VIVO. Componente único compartido (surface: both):
@@ -126,7 +126,13 @@ export function VoiceToTextPanel() {
     setBusy(true);
     queueRef.current = queueRef.current.then(async () => {
       try {
-        const { clean } = await engineClient.voz.transcribe(blob, false, langRef.current || undefined);
+        // fast=true → modelo ligero (tiny) para que el dictado vaya casi en tiempo real.
+        const { clean } = await engineClient.voz.transcribe(
+          blob,
+          false,
+          langRef.current || undefined,
+          true,
+        );
         appendText(clean);
       } catch {
         // Un trozo fallido no corta el dictado; se sigue con el siguiente.

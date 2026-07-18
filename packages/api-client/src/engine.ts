@@ -74,14 +74,15 @@ export const engineClient = {
       post<{ text: string }>('/modules/copywriter/generate', { brief, tone, format }),
   },
   voz: {
-    // Sube audio WAV (Web Audio). `cleanup=false` salta el pulido IA (trozos en vivo, + rápido).
-    // `language` (ej. 'es','en') fuerza el idioma; vacío/undefined = autodetectar.
-    transcribe: (audio: Blob, cleanup = true, language?: string) => {
+    // Sube audio WAV (Web Audio). `cleanup=false` salta el pulido IA (trozos en vivo).
+    // `language` fuerza el idioma; `fast=true` usa el modelo ligero (dictado en vivo).
+    transcribe: (audio: Blob, cleanup = true, language?: string, fast = false) => {
       const form = new FormData();
       form.append('file', audio, 'grabacion.wav');
       const params = new URLSearchParams();
       if (!cleanup) params.set('cleanup', 'false');
       if (language) params.set('language', language);
+      if (fast) params.set('fast', 'true');
       const q = params.toString() ? `?${params.toString()}` : '';
       return postForm<{ raw: string; clean: string }>(`/modules/voz/transcribe${q}`, form);
     },

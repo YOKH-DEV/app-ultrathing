@@ -17,21 +17,23 @@ from app.core.config import settings
 from .schemas import TranscriptResult
 
 
-@lru_cache(maxsize=1)
-def _model() -> WhisperModel:
-    """Carga el modelo una sola vez y lo reusa entre peticiones."""
-    return WhisperModel(settings.whisper_model, device="cpu", compute_type="int8")
+@lru_cache(maxsize=3)
+def _model(name: str) -> WhisperModel:
+    """Carga un modelo por nombre una sola vez y lo reusa entre peticiones."""
+    return WhisperModel(name, device="cpu", compute_type="int8")
 
 
 def warmup() -> None:
-    """Precarga el modelo (lo llama el arranque del motor) para que la primera
-    transcripción no espere la descarga/carga del modelo."""
-    _model()
+    """Precarga el modelo rápido (el que se usa en vivo) al arrancar el motor, para
+    que la primera transcripción no espere la descarga/carga del modelo."""
+    _model(settings.whisper_live_model)
 
 
-def _transcribe_file(path: str, language: str | None) -> str:
+def _transcribe_file(path: str, language: str | None, fast: bool) -> str:
+    # fast=True usa el modelo ligero (dictado en vivo); si no, el preciso.
     # language=None → whisper autodetecta; forzarlo evita mezclar idiomas y acelera.
-    segments, _info = _model().transcribe(path, language=language, vad_filter=True)
+    model_name = settings.whisper_live_model if fast else settings.whisper_model
+    segments, _info = _model(model_name).transcribe(path, language=language, vad_filter=True)
     return " ".join(seg.text.strip() for seg in segments).strip()
 
 
@@ -49,6 +51,7 @@ async def transcribe(
     suffix: str = ".webm",
     cleanup: bool = True,
     language: str | None = None,
+    fast: bool = False,
 ) -> dict[str, str]:
     """Transcribe el audio y devuelve {raw, clean}. Lanza ValueError si el audio
     está vacío o whisper no logra sacar texto.
@@ -56,6 +59,7 @@ async def transcribe(
     `cleanup=False` salta el pulido con IA (para los trozos de dictado en vivo, donde
     importa la latencia): en ese caso `clean == raw`.
     `language` (ej. 'es', 'en') fuerza el idioma; None deja que whisper lo detecte.
+    `fast=True` usa el modelo ligero (dictado en vivo); False usa el preciso.
     """
     if not audio:
         raise ValueError("No se recibió audio.")
@@ -64,7 +68,7 @@ async def transcribe(
     try:
         with os.fdopen(fd, "wb") as f:
             f.write(audio)
-        raw = await asyncio.to_thread(_transcribe_file, path, language)
+        raw = await asyncio.to_thread(_transcribe_file, path, language, fast)
     finally:
         try:
             os.remove(path)
