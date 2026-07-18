@@ -69,11 +69,12 @@ export const engineClient = {
       post<{ text: string }>('/modules/copywriter/generate', { brief, tone, format }),
   },
   voz: {
-    // Sube el audio grabado (Blob WAV de Web Audio). Devuelve texto crudo + pulido.
-    transcribe: (audio: Blob) => {
+    // Sube audio WAV (Web Audio). `cleanup=false` salta el pulido IA (trozos en vivo, + rápido).
+    transcribe: (audio: Blob, cleanup = true) => {
       const form = new FormData();
       form.append('file', audio, 'grabacion.wav');
-      return postForm<{ raw: string; clean: string }>('/modules/voz/transcribe', form);
+      const q = cleanup ? '' : '?cleanup=false';
+      return postForm<{ raw: string; clean: string }>(`/modules/voz/transcribe${q}`, form);
     },
   },
 };

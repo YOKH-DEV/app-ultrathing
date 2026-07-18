@@ -40,16 +40,19 @@ function encodeWav(samples: Float32Array, sampleRate: number): Blob {
   return new Blob([buffer], { type: 'audio/wav' });
 }
 
+const FLUSH_MS = 4000; // cada cuánto se manda un trozo al motor durante el dictado
+
 /**
- * Grabar voz → texto. Componente ÚNICO compartido entre escritorio y web (surface: both):
- * captura audio con Web Audio API (getUserMedia + ScriptProcessor), lo codifica a WAV,
- * lo sube al motor (whisper local + pulido de ortografía) y muestra el texto para copiar.
+ * Dictado por voz → texto EN VIVO. Componente único compartido (surface: both):
+ * captura audio con Web Audio API y, mientras grabas, manda trozos al motor
+ * (whisper local) y va agregando el texto a un área editable. Puedes escribir,
+ * borrar o corregir el texto en cualquier momento.
  */
 export function VoiceToTextPanel() {
+  const [text, setText] = useState('');
   const [recording, setRecording] = useState(false);
   const [seconds, setSeconds] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [text, setText] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -57,10 +60,14 @@ export function VoiceToTextPanel() {
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const chunksRef = useRef<Float32Array[]>([]);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const bufferRef = useRef<Float32Array[]>([]);
+  const sampleRateRef = useRef(44100);
+  const flushTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const secTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const queueRef = useRef<Promise<void>>(Promise.resolve());
+  const pendingRef = useRef(0);
 
-  function teardown() {
+  function stopAudioNodes() {
     processorRef.current?.disconnect();
     sourceRef.current?.disconnect();
     void ctxRef.current?.close();
@@ -69,18 +76,55 @@ export function VoiceToTextPanel() {
     sourceRef.current = null;
     ctxRef.current = null;
     streamRef.current = null;
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+    if (flushTimerRef.current) clearInterval(flushTimerRef.current);
+    if (secTimerRef.current) clearInterval(secTimerRef.current);
+    flushTimerRef.current = null;
+    secTimerRef.current = null;
   }
 
-  // Limpieza si el componente se desmonta grabando (cambio de pantalla).
-  useEffect(() => teardown, []);
+  // Limpieza si el componente se desmonta grabando.
+  useEffect(() => stopAudioNodes, []);
+
+  function appendText(chunk: string) {
+    const t = chunk.trim();
+    if (!t) return;
+    setText((prev) => (prev ? `${prev.replace(/\s*$/, '')} ${t}` : t));
+  }
+
+  // Toma el audio acumulado, lo encola (en orden) y lo manda al motor.
+  function flushBuffer(isFinal: boolean) {
+    const chunks = bufferRef.current;
+    const total = chunks.reduce((n, c) => n + c.length, 0);
+    const minSamples = sampleRateRef.current * 0.6; // ignora trozos <0.6s salvo el final
+    if (total === 0 || (!isFinal && total < minSamples)) return queueRef.current;
+
+    bufferRef.current = [];
+    const merged = new Float32Array(total);
+    let at = 0;
+    for (const c of chunks) {
+      merged.set(c, at);
+      at += c.length;
+    }
+    const blob = encodeWav(merged, sampleRateRef.current);
+
+    pendingRef.current += 1;
+    setBusy(true);
+    queueRef.current = queueRef.current.then(async () => {
+      try {
+        const { clean } = await engineClient.voz.transcribe(blob, false);
+        appendText(clean);
+      } catch {
+        // Un trozo fallido no corta el dictado; se sigue con el siguiente.
+      } finally {
+        pendingRef.current -= 1;
+        if (pendingRef.current === 0) setBusy(false);
+      }
+    });
+    return queueRef.current;
+  }
 
   async function startRecording() {
     setError(null);
-    setText(null);
     setCopied(false);
     setSeconds(0);
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -96,57 +140,33 @@ export function VoiceToTextPanel() {
         (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       const ctx = new Ctx();
       ctxRef.current = ctx;
+      sampleRateRef.current = ctx.sampleRate;
       const source = ctx.createMediaStreamSource(stream);
       sourceRef.current = source;
       const processor = ctx.createScriptProcessor(4096, 1, 1);
       processorRef.current = processor;
-      chunksRef.current = [];
+      bufferRef.current = [];
 
       processor.onaudioprocess = (e) => {
-        chunksRef.current.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+        bufferRef.current.push(new Float32Array(e.inputBuffer.getChannelData(0)));
       };
       source.connect(processor);
       processor.connect(ctx.destination);
 
       setRecording(true);
-      timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
+      secTimerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
+      flushTimerRef.current = setInterval(() => flushBuffer(false), FLUSH_MS);
     } catch (e) {
       const err = e as DOMException;
       setError(`Micrófono: ${err.name ?? 'Error'} — ${err.message ?? ''}`);
-      teardown();
+      stopAudioNodes();
     }
   }
 
   function stopRecording() {
     setRecording(false);
-    const sampleRate = ctxRef.current?.sampleRate ?? 44100;
-    const chunks = chunksRef.current;
-    teardown();
-
-    const total = chunks.reduce((n, c) => n + c.length, 0);
-    if (total === 0) {
-      setError('No se capturó audio. Intenta de nuevo.');
-      return;
-    }
-    const merged = new Float32Array(total);
-    let at = 0;
-    for (const c of chunks) {
-      merged.set(c, at);
-      at += c.length;
-    }
-    void transcribe(encodeWav(merged, sampleRate));
-  }
-
-  async function transcribe(blob: Blob) {
-    setLoading(true);
-    try {
-      const { clean } = await engineClient.voz.transcribe(blob);
-      setText(clean);
-    } catch {
-      setError('No se pudo transcribir. Revisa que el motor esté activo.');
-    } finally {
-      setLoading(false);
-    }
+    flushBuffer(true); // manda lo que quede del audio
+    stopAudioNodes();
   }
 
   async function handleCopy() {
@@ -159,15 +179,13 @@ export function VoiceToTextPanel() {
     <div>
       <h2 className="mb-1 font-display text-2xl text-text">Voz a texto</h2>
       <p className="mb-6 text-sm text-text-muted">
-        Graba tu voz y conviértela en texto ordenado, listo para copiar.
+        Habla y el texto aparece abajo en vivo. Puedes editarlo, borrar o escribir.
       </p>
 
       <Card>
-        <div className="flex items-center gap-3">
+        <div className="mb-3 flex flex-wrap items-center gap-3">
           {!recording ? (
-            <Button onClick={startRecording} disabled={loading}>
-              {loading ? 'Transcribiendo…' : '● Grabar'}
-            </Button>
+            <Button onClick={startRecording}>● Grabar</Button>
           ) : (
             <Button variant="ghost" onClick={stopRecording}>
               ■ Detener
@@ -179,24 +197,28 @@ export function VoiceToTextPanel() {
               Grabando… {fmt(seconds)}
             </span>
           )}
-          {loading && <span className="text-sm text-text-muted">Procesando audio…</span>}
+          {busy && <span className="text-sm text-text-faint">transcribiendo…</span>}
+          <div className="ml-auto flex gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setText('')} disabled={!text}>
+              Limpiar
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleCopy} disabled={!text}>
+              {copied ? 'Copiado ✓' : 'Copiar'}
+            </Button>
+          </div>
         </div>
 
-        {error && <p className="mt-3 text-sm text-[var(--danger)]">{error}</p>}
+        {error && <p className="mb-3 text-sm text-[var(--danger)]">{error}</p>}
 
-        {text && (
-          <div className="mt-4">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-sm text-text-muted">Texto</span>
-              <Button variant="ghost" size="sm" onClick={handleCopy}>
-                {copied ? 'Copiado ✓' : 'Copiar'}
-              </Button>
-            </div>
-            <pre className="whitespace-pre-wrap rounded border border-line bg-elevated p-3 font-sans text-sm text-text">
-              {text}
-            </pre>
-          </div>
-        )}
+        <textarea
+          value={text}
+          onChange={(e) => {
+            setText(e.target.value);
+            setCopied(false);
+          }}
+          placeholder="Aquí aparecerá tu dictado… (también puedes escribir a mano)"
+          className="h-72 w-full resize-y overflow-auto whitespace-pre-wrap break-words rounded border border-line bg-elevated p-3 text-sm leading-relaxed text-text outline-none focus:border-gold"
+        />
       </Card>
     </div>
   );

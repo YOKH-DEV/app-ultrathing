@@ -37,9 +37,13 @@ def _cleanup_prompt(raw: str) -> list[dict[str, str]]:
     return [{"role": "system", "content": system}, {"role": "user", "content": raw}]
 
 
-async def transcribe(audio: bytes, suffix: str = ".webm") -> dict[str, str]:
+async def transcribe(audio: bytes, suffix: str = ".webm", cleanup: bool = True) -> dict[str, str]:
     """Transcribe el audio y devuelve {raw, clean}. Lanza ValueError si el audio
-    está vacío o whisper no logra sacar texto."""
+    está vacío o whisper no logra sacar texto.
+
+    `cleanup=False` salta el pulido con IA (para los trozos de dictado en vivo, donde
+    importa la latencia): en ese caso `clean == raw`.
+    """
     if not audio:
         raise ValueError("No se recibió audio.")
 
@@ -59,9 +63,10 @@ async def transcribe(audio: bytes, suffix: str = ".webm") -> dict[str, str]:
 
     # Pulido best-effort: si la IA no responde (sin saldo/key), nos quedamos con el crudo.
     clean = raw
-    try:
-        clean = await chat(_cleanup_prompt(raw), temperature=0.2)
-    except Exception:  # noqa: BLE001 — el pulido es opcional, no debe tumbar la transcripción
-        clean = raw
+    if cleanup:
+        try:
+            clean = await chat(_cleanup_prompt(raw), temperature=0.2)
+        except Exception:  # noqa: BLE001 — el pulido es opcional, no debe tumbar la transcripción
+            clean = raw
 
     return TranscriptResult(raw=raw, clean=clean).model_dump()
