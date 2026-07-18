@@ -34,3 +34,11 @@
 }
 
 body { background: var(--bg-base); color: var(--text); font-family: var(--font-sans); }
+
+/* Los <option> de los <select> heredan el texto claro del tema; sin esto, al abrir
+   el desplegable el popup nativo usa fondo blanco → texto blanco sobre blanco,
+   invisible. Les fijamos el fondo oscuro y el texto claro del tema. */
+select option {
+  background-color: var(--bg-elevated);
+  color: var(--text);
+}
