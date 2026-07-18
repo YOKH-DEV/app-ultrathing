@@ -14,11 +14,13 @@ router = APIRouter(prefix="/modules/voz", tags=["voz"])
 
 @router.post("/transcribe", response_model=TranscriptResult)
 async def transcribe_audio(
-    file: UploadFile = File(...), cleanup: bool = Query(default=True)
+    file: UploadFile = File(...),
+    cleanup: bool = Query(default=True),
+    language: str | None = Query(default=None),
 ) -> dict[str, str]:
     data = await file.read()
     _, ext = os.path.splitext(file.filename or "")
     try:
-        return await transcribe(data, suffix=ext or ".webm", cleanup=cleanup)
+        return await transcribe(data, suffix=ext or ".webm", cleanup=cleanup, language=language)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

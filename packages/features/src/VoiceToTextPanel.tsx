@@ -42,6 +42,18 @@ function encodeWav(samples: Float32Array, sampleRate: number): Blob {
 
 const FLUSH_MS = 4000; // cada cuánto se manda un trozo al motor durante el dictado
 
+const LANGS: { value: string; label: string }[] = [
+  { value: 'es', label: 'Español' },
+  { value: 'en', label: 'English' },
+  { value: 'pt', label: 'Português' },
+  { value: 'fr', label: 'Français' },
+  { value: 'it', label: 'Italiano' },
+  { value: '', label: 'Detectar' },
+];
+
+const selectClass =
+  'h-9 rounded border border-line bg-elevated px-2 text-sm text-text outline-none focus:border-gold';
+
 /**
  * Dictado por voz → texto EN VIVO. Componente único compartido (surface: both):
  * captura audio con Web Audio API y, mientras grabas, manda trozos al motor
@@ -50,6 +62,7 @@ const FLUSH_MS = 4000; // cada cuánto se manda un trozo al motor durante el dic
  */
 export function VoiceToTextPanel() {
   const [text, setText] = useState('');
+  const [lang, setLang] = useState('es');
   const [recording, setRecording] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -66,6 +79,8 @@ export function VoiceToTextPanel() {
   const secTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const queueRef = useRef<Promise<void>>(Promise.resolve());
   const pendingRef = useRef(0);
+  const langRef = useRef(lang);
+  langRef.current = lang; // el trozo en vivo lee siempre el idioma actual
 
   function stopAudioNodes() {
     processorRef.current?.disconnect();
@@ -111,7 +126,7 @@ export function VoiceToTextPanel() {
     setBusy(true);
     queueRef.current = queueRef.current.then(async () => {
       try {
-        const { clean } = await engineClient.voz.transcribe(blob, false);
+        const { clean } = await engineClient.voz.transcribe(blob, false, langRef.current || undefined);
         appendText(clean);
       } catch {
         // Un trozo fallido no corta el dictado; se sigue con el siguiente.
@@ -191,6 +206,19 @@ export function VoiceToTextPanel() {
               ■ Detener
             </Button>
           )}
+          <select
+            value={lang}
+            onChange={(e) => setLang(e.target.value)}
+            disabled={recording}
+            title="Idioma del dictado"
+            className={selectClass}
+          >
+            {LANGS.map((l) => (
+              <option key={l.value} value={l.value}>
+                {l.label}
+              </option>
+            ))}
+          </select>
           {recording && (
             <span className="flex items-center gap-2 text-sm text-text-muted">
               <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-[var(--danger)]" />

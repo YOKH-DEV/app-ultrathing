@@ -23,8 +23,15 @@ def _model() -> WhisperModel:
     return WhisperModel(settings.whisper_model, device="cpu", compute_type="int8")
 
 
-def _transcribe_file(path: str) -> str:
-    segments, _info = _model().transcribe(path, vad_filter=True)
+def warmup() -> None:
+    """Precarga el modelo (lo llama el arranque del motor) para que la primera
+    transcripción no espere la descarga/carga del modelo."""
+    _model()
+
+
+def _transcribe_file(path: str, language: str | None) -> str:
+    # language=None → whisper autodetecta; forzarlo evita mezclar idiomas y acelera.
+    segments, _info = _model().transcribe(path, language=language, vad_filter=True)
     return " ".join(seg.text.strip() for seg in segments).strip()
 
 
@@ -37,12 +44,18 @@ def _cleanup_prompt(raw: str) -> list[dict[str, str]]:
     return [{"role": "system", "content": system}, {"role": "user", "content": raw}]
 
 
-async def transcribe(audio: bytes, suffix: str = ".webm", cleanup: bool = True) -> dict[str, str]:
+async def transcribe(
+    audio: bytes,
+    suffix: str = ".webm",
+    cleanup: bool = True,
+    language: str | None = None,
+) -> dict[str, str]:
     """Transcribe el audio y devuelve {raw, clean}. Lanza ValueError si el audio
     está vacío o whisper no logra sacar texto.
 
     `cleanup=False` salta el pulido con IA (para los trozos de dictado en vivo, donde
     importa la latencia): en ese caso `clean == raw`.
+    `language` (ej. 'es', 'en') fuerza el idioma; None deja que whisper lo detecte.
     """
     if not audio:
         raise ValueError("No se recibió audio.")
@@ -51,7 +64,7 @@ async def transcribe(audio: bytes, suffix: str = ".webm", cleanup: bool = True) 
     try:
         with os.fdopen(fd, "wb") as f:
             f.write(audio)
-        raw = await asyncio.to_thread(_transcribe_file, path)
+        raw = await asyncio.to_thread(_transcribe_file, path, language)
     finally:
         try:
             os.remove(path)

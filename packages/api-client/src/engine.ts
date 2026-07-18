@@ -75,10 +75,14 @@ export const engineClient = {
   },
   voz: {
     // Sube audio WAV (Web Audio). `cleanup=false` salta el pulido IA (trozos en vivo, + rápido).
-    transcribe: (audio: Blob, cleanup = true) => {
+    // `language` (ej. 'es','en') fuerza el idioma; vacío/undefined = autodetectar.
+    transcribe: (audio: Blob, cleanup = true, language?: string) => {
       const form = new FormData();
       form.append('file', audio, 'grabacion.wav');
-      const q = cleanup ? '' : '?cleanup=false';
+      const params = new URLSearchParams();
+      if (!cleanup) params.set('cleanup', 'false');
+      if (language) params.set('language', language);
+      const q = params.toString() ? `?${params.toString()}` : '';
       return postForm<{ raw: string; clean: string }>(`/modules/voz/transcribe${q}`, form);
     },
   },
