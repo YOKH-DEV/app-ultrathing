@@ -1,18 +1,36 @@
 import { useState } from 'react';
 import { Button, Card } from '@ultrathing/ui';
-import { engineClient, streamJob } from '@ultrathing/api-client';
+import {
+  engineClient,
+  streamJob,
+  type DownloadFormat,
+  type DownloadQuality,
+} from '@ultrathing/api-client';
 
-/** Descarga rápida: pega una URL y baja video/audio. */
+const QUALITIES: { value: DownloadQuality; label: string }[] = [
+  { value: 'mejor', label: 'Mejor disponible' },
+  { value: '2160', label: '4K (2160p)' },
+  { value: '1440', label: '1440p' },
+  { value: '1080', label: '1080p' },
+  { value: '720', label: '720p' },
+];
+
+const selectClass =
+  'h-10 rounded border border-line bg-elevated px-3 text-sm text-text outline-none focus:border-gold';
+
+/** Descarga rápida: pega una URL, elige mp3/mp4 y calidad, y baja el archivo. */
 export function DownloaderPage() {
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [url, setUrl] = useState('');
+  const [format, setFormat] = useState<DownloadFormat>('mp4');
+  const [quality, setQuality] = useState<DownloadQuality>('mejor');
 
   async function handleDownload() {
     setProgress(0);
     setError(null);
     try {
-      const { job_id } = await engineClient.downloader.start(url);
+      const { job_id } = await engineClient.downloader.start(url, format, quality);
       const stop = streamJob(job_id, (job) => {
         setProgress(job.progress);
         if (job.status === 'error') setError(job.error ?? 'La descarga falló.');
@@ -42,6 +60,31 @@ export function DownloaderPage() {
             Descargar
           </Button>
         </div>
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          <select
+            value={format}
+            onChange={(e) => setFormat(e.target.value as DownloadFormat)}
+            className={selectClass}
+          >
+            <option value="mp4">Video (MP4)</option>
+            <option value="mp3">Audio (MP3)</option>
+          </select>
+          {format === 'mp4' && (
+            <select
+              value={quality}
+              onChange={(e) => setQuality(e.target.value as DownloadQuality)}
+              className={selectClass}
+            >
+              {QUALITIES.map((q) => (
+                <option key={q.value} value={q.value}>
+                  {q.label}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+
         {progress !== null && (
           <div className="mt-3 h-1.5 w-full overflow-hidden rounded bg-elevated">
             <div className="h-full bg-gold transition-all" style={{ width: `${progress}%` }} />

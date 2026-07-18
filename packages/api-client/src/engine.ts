@@ -41,10 +41,15 @@ export function streamJob(id: string, onUpdate: (job: Job) => void): () => void 
 export type CopyTone = 'profesional' | 'cercano' | 'persuasivo' | 'divertido';
 export type CopyFormat = 'post' | 'anuncio' | 'email' | 'titulares';
 
+/** Opciones de descarga (deben coincidir con schemas.py del downloader). */
+export type DownloadFormat = 'mp4' | 'mp3';
+export type DownloadQuality = 'mejor' | '2160' | '1440' | '1080' | '720';
+
 /** Cliente tipado del motor. Lo usan el escritorio y la web (el copywriter es surface: both). */
 export const engineClient = {
   downloader: {
-    start: (url: string) => post<{ job_id: string }>('/modules/downloader/start', { url }),
+    start: (url: string, format: DownloadFormat = 'mp4', quality: DownloadQuality = 'mejor') =>
+      post<{ job_id: string }>('/modules/downloader/start', { url, format, quality }),
   },
   image: {
     removeBackground: (file: File) => {

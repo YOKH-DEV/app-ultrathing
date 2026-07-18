@@ -26,6 +26,11 @@ async def start(
     job = create_job(module="downloader", user_id=user_id, token=token if user_id else None)
     # Se lanza en segundo plano: devolvemos el id al instante, la UI escucha por SSE.
     asyncio.create_task(
-        run_job(job, lambda j, report: download(str(body.url), report, user_id, token)),
+        run_job(
+            job,
+            lambda j, report: download(
+                str(body.url), report, user_id, token, body.format, body.quality
+            ),
+        ),
     )
     return {"job_id": job.id}

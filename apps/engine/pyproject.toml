@@ -8,6 +8,7 @@ dependencies = [
   "pydantic>=2.9",
   "python-dotenv>=1.0",
   "yt-dlp>=2024.8",
+  "imageio-ffmpeg>=0.5",
   "supabase>=2.7",
   "python-multipart>=0.0.9",
   "rembg[cpu]>=2.0",
@@ -38,5 +39,5 @@ line-length = 100
 strict = true
 
 [[tool.mypy.overrides]]
-module = ["rembg.*", "yt_dlp.*", "pandas.*", "faster_whisper.*"]
+module = ["rembg.*", "yt_dlp.*", "pandas.*", "faster_whisper.*", "imageio_ffmpeg.*"]
 ignore_missing_imports = true
