@@ -31,6 +31,9 @@ class Settings:
     zai_api_key: str = os.getenv("ZAI_API_KEY", "")
     zai_base_url: str = os.getenv("ZAI_BASE_URL", "https://api.z.ai/api/paas/v4")
     zai_model: str = os.getenv("ZAI_MODEL", "glm-4.6")
+    # Modelo de faster-whisper para el módulo voz (tiny/base/small/medium). Se descarga
+    # solo la 1a vez. 'base' equilibra velocidad/calidad en CPU.
+    whisper_model: str = os.getenv("WHISPER_MODEL", "base")
 
 
 settings = Settings()

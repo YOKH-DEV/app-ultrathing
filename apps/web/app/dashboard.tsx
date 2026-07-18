@@ -22,6 +22,11 @@ export function Dashboard({ session }: { session: Session | null }) {
               Copywriter
             </Button>
           </Link>
+          <Link href="/voz">
+            <Button variant="ghost" size="sm">
+              Voz a texto
+            </Button>
+          </Link>
           {session && (
             <>
               <span className="text-sm text-text-faint">{session.user.email}</span>

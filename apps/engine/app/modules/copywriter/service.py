@@ -1,11 +1,9 @@
-"""Lógica pura del copywriter. Llama a una API de IA (z.ai / GLM, compatible con
-OpenAI) y devuelve el copy. NO toca disco ni Supabase: el resultado es efímero,
+"""Lógica pura del copywriter. Llama a una API de IA (vía el helper compartido
+`core.ai`) y devuelve el copy. NO toca disco ni Supabase: el resultado es efímero,
 se genera bajo demanda y se muestra en pantalla (T4.1). Surface 'both': el mismo
 endpoint lo consumen el escritorio y la web.
 """
-import httpx
-
-from app.core.config import settings
+from app.core.ai import chat
 from .schemas import CopyResult, Format, Tone
 
 _FORMAT_HINT: dict[Format, str] = {
@@ -33,28 +31,6 @@ def _prompt(brief: str, tone: Tone, format: Format) -> list[dict[str, str]]:
 
 
 async def generate(brief: str, tone: Tone, format: Format) -> dict[str, str]:
-    """Pide el copy al proveedor de IA. Lanza ValueError si no hay key configurada."""
-    if not settings.zai_api_key:
-        raise ValueError(
-            "Falta ZAI_API_KEY en .env.local — el copywriter necesita la clave del proveedor de IA."
-        )
-
-    payload = {
-        "model": settings.zai_model,
-        "messages": _prompt(brief, tone, format),
-        "temperature": 0.8,
-    }
-    headers = {"Authorization": f"Bearer {settings.zai_api_key}"}
-
-    async with httpx.AsyncClient(timeout=60) as client:
-        res = await client.post(
-            f"{settings.zai_base_url}/chat/completions", json=payload, headers=headers
-        )
-    if res.status_code != 200:
-        raise ValueError(f"El proveedor de IA respondió {res.status_code}: {res.text[:200]}")
-
-    data = res.json()
-    text = (data.get("choices") or [{}])[0].get("message", {}).get("content", "").strip()
-    if not text:
-        raise ValueError("El proveedor de IA no devolvió texto.")
+    """Pide el copy al proveedor de IA. Lanza ValueError si no hay key o falla."""
+    text = await chat(_prompt(brief, tone, format), temperature=0.8)
     return CopyResult(text=text).model_dump()

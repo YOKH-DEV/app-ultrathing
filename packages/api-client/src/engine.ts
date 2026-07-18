@@ -68,4 +68,12 @@ export const engineClient = {
     generate: (brief: string, tone: CopyTone, format: CopyFormat) =>
       post<{ text: string }>('/modules/copywriter/generate', { brief, tone, format }),
   },
+  voz: {
+    // Sube el audio grabado (Blob de MediaRecorder). Devuelve texto crudo + pulido.
+    transcribe: (audio: Blob) => {
+      const form = new FormData();
+      form.append('file', audio, 'grabacion.webm');
+      return postForm<{ raw: string; clean: string }>('/modules/voz/transcribe', form);
+    },
+  },
 };
