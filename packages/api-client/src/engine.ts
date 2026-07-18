@@ -69,10 +69,10 @@ export const engineClient = {
       post<{ text: string }>('/modules/copywriter/generate', { brief, tone, format }),
   },
   voz: {
-    // Sube el audio grabado (Blob de MediaRecorder). Devuelve texto crudo + pulido.
+    // Sube el audio grabado (Blob WAV de Web Audio). Devuelve texto crudo + pulido.
     transcribe: (audio: Blob) => {
       const form = new FormData();
-      form.append('file', audio, 'grabacion.webm');
+      form.append('file', audio, 'grabacion.wav');
       return postForm<{ raw: string; clean: string }>('/modules/voz/transcribe', form);
     },
   },
