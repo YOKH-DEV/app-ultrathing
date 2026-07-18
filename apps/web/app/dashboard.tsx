@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { StatCard, Button } from '@ultrathing/ui';
 import { featuresFor } from '@ultrathing/core';
 import { signOut, type Session } from '@ultrathing/api-client';
@@ -15,14 +16,21 @@ export function Dashboard({ session }: { session: Session | null }) {
         <h1 className="font-display text-2xl text-text">
           Ultra<span className="text-gold">thing</span> · Panel
         </h1>
-        {session && (
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-text-faint">{session.user.email}</span>
-            <Button variant="ghost" size="sm" onClick={() => signOut()}>
-              Salir
+        <div className="flex items-center gap-3">
+          <Link href="/copywriter">
+            <Button variant="ghost" size="sm">
+              Copywriter
             </Button>
-          </div>
-        )}
+          </Link>
+          {session && (
+            <>
+              <span className="text-sm text-text-faint">{session.user.email}</span>
+              <Button variant="ghost" size="sm" onClick={() => signOut()}>
+                Salir
+              </Button>
+            </>
+          )}
+        </div>
       </header>
       <section className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard label="Descargas" value="128" hint="este mes" />

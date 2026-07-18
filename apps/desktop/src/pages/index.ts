@@ -1,4 +1,5 @@
 import { type ComponentType } from 'react';
+import { CopywriterPanel } from '@ultrathing/features';
 import { DownloaderPage } from './DownloaderPage';
 import { ImagePage } from './ImagePage';
 import { FilesPage } from './FilesPage';
@@ -15,4 +16,6 @@ export const pageByRoute: Record<string, ComponentType> = {
   '/files': FilesPage,
   '/scraper': ScraperPage,
   '/leads': LeadsPage,
+  // El copywriter es surface 'both': mismo componente compartido que monta la web.
+  '/copywriter': CopywriterPanel,
 };

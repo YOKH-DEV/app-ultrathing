@@ -13,6 +13,7 @@
     "@ultrathing/ui": "workspace:*",
     "@ultrathing/core": "workspace:*",
     "@ultrathing/api-client": "workspace:*",
+    "@ultrathing/features": "workspace:*",
     "@tanstack/react-query": "^5.56.0",
     "next": "^15.0.0",
     "react": "^19.0.0",

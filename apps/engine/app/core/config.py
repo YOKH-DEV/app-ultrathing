@@ -25,6 +25,12 @@ class Settings:
         os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "sb_publishable_NYILSb0ci4kxI6J1Y3e-Xw_pErjjeOO"),
     )
     download_dir: str = os.getenv("DOWNLOAD_DIR", os.path.expanduser("~/Ultrathing"))
+    # Proveedor de IA del módulo copywriter (z.ai / GLM, API compatible con OpenAI).
+    # La key es privada: SOLO va en .env.local, nunca hardcodeada ni al repo. El
+    # binario empaquetado no la lleva; el copywriter solo funciona con .env.local puesto.
+    zai_api_key: str = os.getenv("ZAI_API_KEY", "")
+    zai_base_url: str = os.getenv("ZAI_BASE_URL", "https://api.z.ai/api/paas/v4")
+    zai_model: str = os.getenv("ZAI_MODEL", "glm-4.6")
 
 
 settings = Settings()

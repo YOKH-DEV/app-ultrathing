@@ -37,7 +37,11 @@ export function streamJob(id: string, onUpdate: (job: Job) => void): () => void 
   return () => es.close();
 }
 
-/** Cliente tipado del motor. Solo lo usa el escritorio (surface: desktop). */
+/** Formato/tono que acepta el copywriter (deben coincidir con schemas.py del motor). */
+export type CopyTone = 'profesional' | 'cercano' | 'persuasivo' | 'divertido';
+export type CopyFormat = 'post' | 'anuncio' | 'email' | 'titulares';
+
+/** Cliente tipado del motor. Lo usan el escritorio y la web (el copywriter es surface: both). */
 export const engineClient = {
   downloader: {
     start: (url: string) => post<{ job_id: string }>('/modules/downloader/start', { url }),
@@ -58,5 +62,10 @@ export const engineClient = {
   },
   scraper: {
     start: (url: string) => post<{ job_id: string }>('/modules/scraper/start', { url }),
+  },
+  copywriter: {
+    // Petición corta: devuelve el copy directo, sin job system (ver router.py del motor).
+    generate: (brief: string, tone: CopyTone, format: CopyFormat) =>
+      post<{ text: string }>('/modules/copywriter/generate', { brief, tone, format }),
   },
 };
