@@ -10,6 +10,7 @@ from yt_dlp import YoutubeDL
 
 from app.core.config import settings
 from app.core.supabase import insert_download
+from . import history
 from .schemas import DownloadResult, Format, Quality
 
 
@@ -68,11 +69,24 @@ def _download(
         # requested_downloads trae la ruta/ext FINAL (tras convertir a mp3 o unir a mp4);
         # prepare_filename daría el ext previo al postprocesado.
         done = (info.get("requested_downloads") or [{}])[0]
-        return DownloadResult(
+        duration = info.get("duration")
+        result = DownloadResult(
             title=info["title"],
             filepath=done.get("filepath") or ydl.prepare_filename(info),
             ext=done.get("ext") or info["ext"],
+            platform=info.get("extractor_key") or "",
+            duration=int(duration) if duration else None,
         )
+    history.add(
+        {
+            "title": result.title,
+            "platform": result.platform,
+            "format": format,
+            "ext": result.ext,
+            "duration": result.duration,
+        }
+    )
+    return result
 
 
 def _persist(token: str, user_id: str, result: DownloadResult) -> None:

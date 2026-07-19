@@ -5,10 +5,23 @@ from fastapi import APIRouter, Header
 
 from app.core.jobs import create_job, run_job
 from app.core.supabase import user_id_from_token
-from .schemas import StartDownload
+from . import history
+from .schemas import HistoryItem, StartDownload
 from .service import download
 
 router = APIRouter(prefix="/modules/downloader", tags=["downloader"])
+
+
+@router.get("/history")
+async def get_history() -> list[HistoryItem]:
+    """Historial local de descargas (funciona sin login)."""
+    return [HistoryItem(**item) for item in history.read()]
+
+
+@router.delete("/history")
+async def clear_history() -> dict[str, str]:
+    history.clear()
+    return {"status": "ok"}
 
 
 @router.post("/start")

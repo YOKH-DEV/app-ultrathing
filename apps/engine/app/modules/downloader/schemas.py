@@ -18,3 +18,14 @@ class DownloadResult(BaseModel):
     title: str
     filepath: str
     ext: str
+    platform: str = ""          # de dónde se bajó (YouTube, TikTok, Instagram…)
+    duration: int | None = None  # segundos, si el sitio lo reporta
+
+
+class HistoryItem(BaseModel):
+    title: str
+    platform: str = ""
+    format: Format = "mp4"
+    ext: str = ""
+    duration: int | None = None
+    at: str = ""  # ISO timestamp

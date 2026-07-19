@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, Card } from '@ultrathing/ui';
 import {
   engineClient,
   streamJob,
   type DownloadFormat,
+  type DownloadHistoryItem,
   type DownloadQuality,
 } from '@ultrathing/api-client';
 
@@ -16,7 +17,16 @@ const QUALITIES: { value: DownloadQuality; label: string }[] = [
 ];
 
 const selectClass =
-  'h-10 rounded border border-line bg-elevated px-3 text-sm text-text outline-none focus:border-gold';
+  'h-10 cursor-pointer rounded border border-[var(--gold-deep)] bg-gold px-3 text-sm font-medium text-[var(--on-gold)] outline-none focus:border-[var(--gold-bright)]';
+
+function fmtDuration(s: number | null): string {
+  if (!s) return '—';
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  const mm = h ? String(m).padStart(2, '0') : String(m);
+  return `${h ? `${h}:` : ''}${mm}:${String(sec).padStart(2, '0')}`;
+}
 
 /** Descarga rápida: pega una URL, elige mp3/mp4 y calidad, y baja el archivo. */
 export function DownloaderPage() {
@@ -25,6 +35,19 @@ export function DownloaderPage() {
   const [url, setUrl] = useState('');
   const [format, setFormat] = useState<DownloadFormat>('mp4');
   const [quality, setQuality] = useState<DownloadQuality>('mejor');
+  const [history, setHistory] = useState<DownloadHistoryItem[]>([]);
+
+  async function refreshHistory() {
+    try {
+      setHistory(await engineClient.downloader.history());
+    } catch {
+      /* si el motor no responde, dejamos el historial como está */
+    }
+  }
+
+  useEffect(() => {
+    void refreshHistory();
+  }, []);
 
   async function handleDownload() {
     setProgress(0);
@@ -34,12 +57,20 @@ export function DownloaderPage() {
       const stop = streamJob(job_id, (job) => {
         setProgress(job.progress);
         if (job.status === 'error') setError(job.error ?? 'La descarga falló.');
-        if (job.status === 'done' || job.status === 'error') stop();
+        if (job.status === 'done' || job.status === 'error') {
+          stop();
+          if (job.status === 'done') void refreshHistory();
+        }
       });
     } catch {
       setProgress(null);
       setError('No se pudo conectar con el motor.');
     }
+  }
+
+  async function handleClear() {
+    await engineClient.downloader.clearHistory();
+    void refreshHistory();
   }
 
   return (
@@ -92,6 +123,47 @@ export function DownloaderPage() {
         )}
         {error && <p className="mt-3 text-sm text-[var(--danger)]">{error}</p>}
       </Card>
+
+      <div className="mt-6">
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="font-display text-text">Historial de descargas</h3>
+          <Button variant="ghost" size="sm" onClick={handleClear} disabled={history.length === 0}>
+            Limpiar historial
+          </Button>
+        </div>
+        <Card>
+          {history.length === 0 ? (
+            <p className="text-sm text-text-faint">
+              Aún no hay descargas. Lo que bajes aparecerá aquí.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="text-text-muted">
+                    <th className="pb-2 pr-3 font-medium">Nombre</th>
+                    <th className="pb-2 pr-3 font-medium">Plataforma</th>
+                    <th className="pb-2 pr-3 font-medium">Formato</th>
+                    <th className="pb-2 font-medium">Duración</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map((h, i) => (
+                    <tr key={`${h.at}-${i}`} className="border-t border-line text-text">
+                      <td className="max-w-[22rem] truncate py-2 pr-3" title={h.title}>
+                        {h.title}
+                      </td>
+                      <td className="py-2 pr-3 text-text-muted">{h.platform || '—'}</td>
+                      <td className="py-2 pr-3 uppercase text-text-muted">{h.format}</td>
+                      <td className="py-2 text-text-muted">{fmtDuration(h.duration)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      </div>
     </div>
   );
 }

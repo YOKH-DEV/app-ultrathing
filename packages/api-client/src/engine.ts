@@ -30,6 +30,22 @@ async function postForm<T>(path: string, form: FormData): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+async function request<T>(path: string, method: 'GET' | 'DELETE'): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, { method });
+  if (!res.ok) throw new Error(`Engine ${res.status}`);
+  return res.json() as Promise<T>;
+}
+
+/** Una fila del historial local de descargas. */
+export interface DownloadHistoryItem {
+  title: string;
+  platform: string;
+  format: DownloadFormat;
+  ext: string;
+  duration: number | null;
+  at: string;
+}
+
 /** Escucha el progreso de un job por SSE. Devuelve una función para cancelar. */
 export function streamJob(id: string, onUpdate: (job: Job) => void): () => void {
   const es = new EventSource(`${BASE}/jobs/${id}/stream`);
@@ -50,6 +66,8 @@ export const engineClient = {
   downloader: {
     start: (url: string, format: DownloadFormat = 'mp4', quality: DownloadQuality = 'mejor') =>
       post<{ job_id: string }>('/modules/downloader/start', { url, format, quality }),
+    history: () => request<DownloadHistoryItem[]>('/modules/downloader/history', 'GET'),
+    clearHistory: () => request<{ status: string }>('/modules/downloader/history', 'DELETE'),
   },
   image: {
     removeBackground: (file: File) => {
@@ -75,14 +93,14 @@ export const engineClient = {
   },
   voz: {
     // Sube audio WAV (Web Audio). `cleanup=false` salta el pulido IA (trozos en vivo).
-    // `language` fuerza el idioma; `fast=true` usa el modelo ligero (dictado en vivo).
-    transcribe: (audio: Blob, cleanup = true, language?: string, fast = false) => {
+    // `language` fuerza el idioma; `tier` (rapido/equilibrado/preciso) elige el modelo.
+    transcribe: (audio: Blob, cleanup = true, language?: string, tier?: string) => {
       const form = new FormData();
       form.append('file', audio, 'grabacion.wav');
       const params = new URLSearchParams();
       if (!cleanup) params.set('cleanup', 'false');
       if (language) params.set('language', language);
-      if (fast) params.set('fast', 'true');
+      if (tier) params.set('tier', tier);
       const q = params.toString() ? `?${params.toString()}` : '';
       return postForm<{ raw: string; clean: string }>(`/modules/voz/transcribe${q}`, form);
     },
