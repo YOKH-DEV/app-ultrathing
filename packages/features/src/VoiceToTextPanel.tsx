@@ -40,7 +40,13 @@ function encodeWav(samples: Float32Array, sampleRate: number): Blob {
   return new Blob([buffer], { type: 'audio/wav' });
 }
 
-const FLUSH_MS = 1500; // cada cuánto se manda un trozo al motor: corto = casi en vivo
+const FLUSH_MS = 2000; // cada cuánto se manda un trozo al motor durante el dictado
+
+const TIERS: { value: string; label: string }[] = [
+  { value: 'rapido', label: 'Rápido' },
+  { value: 'equilibrado', label: 'Equilibrado' },
+  { value: 'preciso', label: 'Preciso' },
+];
 
 const LANGS: { value: string; label: string }[] = [
   { value: 'es', label: 'Español' },
@@ -63,6 +69,7 @@ const selectClass =
 export function VoiceToTextPanel() {
   const [text, setText] = useState('');
   const [lang, setLang] = useState('es');
+  const [tier, setTier] = useState('equilibrado');
   const [recording, setRecording] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -81,6 +88,8 @@ export function VoiceToTextPanel() {
   const pendingRef = useRef(0);
   const langRef = useRef(lang);
   langRef.current = lang; // el trozo en vivo lee siempre el idioma actual
+  const tierRef = useRef(tier);
+  tierRef.current = tier;
 
   function stopAudioNodes() {
     processorRef.current?.disconnect();
@@ -126,12 +135,12 @@ export function VoiceToTextPanel() {
     setBusy(true);
     queueRef.current = queueRef.current.then(async () => {
       try {
-        // fast=true → modelo ligero (tiny) para que el dictado vaya casi en tiempo real.
+        // tier elige el modelo (rápido/equilibrado/preciso) según lo que pida el usuario.
         const { clean } = await engineClient.voz.transcribe(
           blob,
           false,
           langRef.current || undefined,
-          true,
+          tierRef.current,
         );
         appendText(clean);
       } catch {
@@ -222,6 +231,19 @@ export function VoiceToTextPanel() {
             {LANGS.map((l) => (
               <option key={l.value} value={l.value}>
                 {l.label}
+              </option>
+            ))}
+          </select>
+          <select
+            value={tier}
+            onChange={(e) => setTier(e.target.value)}
+            disabled={recording}
+            title="Calidad: rápido = más veloz, preciso = más exacto"
+            className={selectClass}
+          >
+            {TIERS.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
               </option>
             ))}
           </select>

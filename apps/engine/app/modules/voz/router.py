@@ -17,13 +17,13 @@ async def transcribe_audio(
     file: UploadFile = File(...),
     cleanup: bool = Query(default=True),
     language: str | None = Query(default=None),
-    fast: bool = Query(default=False),
+    tier: str = Query(default="equilibrado"),
 ) -> dict[str, str]:
     data = await file.read()
     _, ext = os.path.splitext(file.filename or "")
     try:
         return await transcribe(
-            data, suffix=ext or ".webm", cleanup=cleanup, language=language, fast=fast
+            data, suffix=ext or ".webm", cleanup=cleanup, language=language, tier=tier
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
