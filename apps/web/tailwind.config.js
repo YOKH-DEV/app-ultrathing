@@ -4,5 +4,9 @@ const preset = require('@ultrathing/ui/preset');
 module.exports = {
   // El preset compartido es la única fuente de verdad del color (tema negro/dorado).
   presets: [preset],
-  content: ['./app/**/*.{ts,tsx}', '../../packages/ui/src/**/*.{ts,tsx}'],
+  content: [
+    './app/**/*.{ts,tsx}',
+    '../../packages/ui/src/**/*.{ts,tsx}',
+    '../../packages/features/src/**/*.{ts,tsx}',
+  ],
 };
