@@ -19,7 +19,7 @@ const FORMATS: { value: CopyFormat; label: string }[] = [
 ];
 
 const selectClass =
-  'h-10 rounded border border-line bg-elevated px-3 text-sm text-text outline-none focus:border-gold';
+  'h-10 cursor-pointer rounded border border-[var(--gold-deep)] bg-gold px-3 text-sm font-medium text-[var(--on-gold)] outline-none focus:border-[var(--gold-bright)]';
 
 /**
  * Copywriter con IA. Componente ÚNICO compartido entre escritorio y web (surface: both):

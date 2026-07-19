@@ -35,10 +35,9 @@
 
 body { background: var(--bg-base); color: var(--text); font-family: var(--font-sans); }
 
-/* Los <option> de los <select> heredan el texto claro del tema; sin esto, al abrir
-   el desplegable el popup nativo usa fondo blanco → texto blanco sobre blanco,
-   invisible. Les fijamos el fondo oscuro y el texto claro del tema. */
+/* Selectores de opciones: dorado con letra negra (como los botones dorados), para
+   que se lean siempre y combinen con la marca. Cubre el control y su popup nativo. */
 select option {
-  background-color: var(--bg-elevated);
-  color: var(--text);
+  background-color: var(--gold);
+  color: var(--on-gold);
 }
