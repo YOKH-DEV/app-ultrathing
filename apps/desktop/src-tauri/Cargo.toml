@@ -26,6 +26,7 @@ tauri-plugin-log = "2"
 tauri-plugin-shell = "2.3.5"
 tauri-plugin-dialog = "2"
 tauri-plugin-opener = "2"
+tauri-plugin-clipboard-manager = "2"
 
 # Linux: acceso al webview WebKitGTK para habilitar micrófono/cámara (getUserMedia),
 # bloqueado por defecto en WebKitGTK. Versión fijada a la que ya usa wry.
