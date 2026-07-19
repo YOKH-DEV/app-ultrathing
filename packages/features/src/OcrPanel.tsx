@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, Card } from '@ultrathing/ui';
 import { engineClient } from '@ultrathing/api-client';
 
@@ -16,7 +16,6 @@ export function OcrPanel() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   async function process(blob: Blob) {
     setLoading(true);
@@ -50,6 +49,25 @@ export function OcrPanel() {
     return () => window.removeEventListener('paste', onPaste);
   }, []);
 
+  // Botón de pegar: lee el portapapeles directo (más fiable que el evento paste en el
+  // webview de escritorio). Requiere permiso de portapapeles (concedido en la app).
+  async function pasteFromClipboard() {
+    setError(null);
+    try {
+      const items = await navigator.clipboard.read();
+      for (const item of items) {
+        const type = item.types.find((t) => t.startsWith('image/'));
+        if (type) {
+          void process(await item.getType(type));
+          return;
+        }
+      }
+      setError('No hay ninguna imagen en el portapapeles. Copia un pantallazo primero.');
+    } catch {
+      setError('No se pudo leer el portapapeles. Prueba arrastrar o elegir el archivo.');
+    }
+  }
+
   async function handleCopy() {
     if (!text) return;
     await navigator.clipboard.writeText(text);
@@ -64,7 +82,16 @@ export function OcrPanel() {
       </p>
 
       <Card>
-        <div
+        <div className="mb-3 flex flex-wrap gap-2">
+          <Button variant="ghost" size="sm" onClick={pasteFromClipboard}>
+            📋 Pegar pantallazo
+          </Button>
+        </div>
+
+        {/* Zona de carga como <label>: el clic dispara el input de archivo con un
+            gesto de usuario real (el clic programático sobre un input oculto no abre
+            el diálogo en el webview de escritorio). */}
+        <label
           onDragOver={(e) => {
             e.preventDefault();
             setDragging(true);
@@ -76,17 +103,15 @@ export function OcrPanel() {
             const file = e.dataTransfer.files[0];
             if (file?.type.startsWith('image/')) void process(file);
           }}
-          onClick={() => inputRef.current?.click()}
           className={`flex cursor-pointer flex-col items-center justify-center rounded border border-dashed p-8 text-center transition-colors ${
             dragging ? 'border-gold bg-[var(--gold-glow)]' : 'border-line bg-elevated'
           }`}
         >
-          <p className="text-sm text-text">Arrastra una imagen aquí, o haz clic para elegir</p>
+          <p className="text-sm text-text">Haz clic aquí para elegir una imagen</p>
           <p className="mt-1 text-xs text-text-faint">
-            También puedes pegar un pantallazo con Ctrl+V
+            o arrástrala aquí · o usa “Pegar pantallazo”
           </p>
           <input
-            ref={inputRef}
             type="file"
             accept="image/*"
             className="hidden"
@@ -96,7 +121,7 @@ export function OcrPanel() {
               e.target.value = '';
             }}
           />
-        </div>
+        </label>
 
         {loading && <p className="mt-3 text-sm text-text-muted">Detectando texto…</p>}
         {error && <p className="mt-3 text-sm text-[var(--danger)]">{error}</p>}
