@@ -28,6 +28,8 @@ class Settings:
     # Proveedor de IA del módulo copywriter (z.ai / GLM, API compatible con OpenAI).
     # La key es privada: SOLO va en .env.local, nunca hardcodeada ni al repo. El
     # binario empaquetado no la lleva; el copywriter solo funciona con .env.local puesto.
+    # Idiomas para el OCR (Tesseract). 'spa+eng' cubre español (con acentos) e inglés.
+    ocr_lang: str = os.getenv("OCR_LANG", "spa+eng")
     zai_api_key: str = os.getenv("ZAI_API_KEY", "")
     zai_base_url: str = os.getenv("ZAI_BASE_URL", "https://api.z.ai/api/paas/v4")
     zai_model: str = os.getenv("ZAI_MODEL", "glm-4.6")

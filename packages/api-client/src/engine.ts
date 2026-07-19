@@ -95,6 +95,14 @@ export const engineClient = {
     generate: (brief: string, tone: CopyTone, format: CopyFormat) =>
       post<{ text: string }>('/modules/copywriter/generate', { brief, tone, format }),
   },
+  ocr: {
+    // Sube una imagen (pantallazo o foto) y devuelve el texto detectado.
+    extract: (image: Blob) => {
+      const form = new FormData();
+      form.append('file', image, 'imagen.png');
+      return postForm<{ text: string }>('/modules/ocr/extract', form);
+    },
+  },
   voz: {
     // Sube audio WAV (Web Audio). `cleanup=false` salta el pulido IA (trozos en vivo).
     // `language` fuerza el idioma; `tier` (rapido/equilibrado/preciso) elige el modelo.

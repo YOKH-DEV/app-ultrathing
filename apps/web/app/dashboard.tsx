@@ -27,6 +27,11 @@ export function Dashboard({ session }: { session: Session | null }) {
               Voz a texto
             </Button>
           </Link>
+          <Link href="/ocr">
+            <Button variant="ghost" size="sm">
+              Imagen a texto
+            </Button>
+          </Link>
           {session && (
             <>
               <span className="text-sm text-text-faint">{session.user.email}</span>

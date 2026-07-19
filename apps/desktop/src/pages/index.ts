@@ -1,5 +1,5 @@
 import { type ComponentType } from 'react';
-import { CopywriterPanel, VoiceToTextPanel } from '@ultrathing/features';
+import { CopywriterPanel, VoiceToTextPanel, OcrPanel } from '@ultrathing/features';
 import { DownloaderPage } from './DownloaderPage';
 import { ImagePage } from './ImagePage';
 import { FilesPage } from './FilesPage';
@@ -19,4 +19,5 @@ export const pageByRoute: Record<string, ComponentType> = {
   // El copywriter es surface 'both': mismo componente compartido que monta la web.
   '/copywriter': CopywriterPanel,
   '/voz': VoiceToTextPanel,
+  '/ocr': OcrPanel,
 };
