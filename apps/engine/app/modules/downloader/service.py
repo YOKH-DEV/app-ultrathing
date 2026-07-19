@@ -32,9 +32,10 @@ def _ffmpeg_dir() -> str:
     return bin_dir
 
 
-def _build_opts(format: Format, quality: Quality) -> dict[str, Any]:
+def _build_opts(format: Format, quality: Quality, dest: str | None) -> dict[str, Any]:
+    out_dir = os.path.expanduser(dest) if dest else settings.download_dir
     opts: dict[str, Any] = {
-        "outtmpl": f"{settings.download_dir}/%(title)s.%(ext)s",
+        "outtmpl": f"{out_dir}/%(title)s.%(ext)s",
         "noplaylist": True,
         "ffmpeg_location": _ffmpeg_dir(),
     }
@@ -54,7 +55,11 @@ def _build_opts(format: Format, quality: Quality) -> dict[str, Any]:
 
 
 def _download(
-    url: str, format: Format, quality: Quality, on_progress: Callable[[float], None]
+    url: str,
+    format: Format,
+    quality: Quality,
+    dest: str | None,
+    on_progress: Callable[[float], None],
 ) -> DownloadResult:
     def hook(d: dict[str, Any]) -> None:
         if d["status"] == "downloading":
@@ -62,7 +67,7 @@ def _download(
             if total:
                 on_progress(d["downloaded_bytes"] / total * 100)
 
-    opts = _build_opts(format, quality)
+    opts = _build_opts(format, quality, dest)
     opts["progress_hooks"] = [hook]
     with YoutubeDL(opts) as ydl:
         info = ydl.extract_info(url, download=True)
@@ -100,12 +105,13 @@ async def download(
     token: str | None = None,
     format: Format = "mp4",
     quality: Quality = "mejor",
+    dest: str | None = None,
 ) -> dict[str, Any]:
     """Corre la descarga bloqueante en un hilo para no frenar el loop async.
 
     Si hay usuario, persiste la fila en `downloads` a su nombre (autenticado con su token).
     """
-    result = await asyncio.to_thread(_download, url, format, quality, report)
+    result = await asyncio.to_thread(_download, url, format, quality, dest, report)
     if user_id and token:
         await asyncio.to_thread(_persist, token, user_id, result)
     return result.model_dump()

@@ -1,6 +1,8 @@
 use std::sync::Mutex;
 use tauri::Manager;
-use tauri_plugin_shell::{process::CommandChild, ShellExt};
+use tauri_plugin_shell::process::CommandChild;
+#[cfg(not(debug_assertions))]
+use tauri_plugin_shell::ShellExt;
 
 /// Handle del proceso del motor (sidecar), para poder matarlo al cerrar la app.
 struct EngineProcess(Mutex<Option<CommandChild>>);
@@ -9,6 +11,8 @@ struct EngineProcess(Mutex<Option<CommandChild>>);
 pub fn run() {
   tauri::Builder::default()
     .plugin(tauri_plugin_shell::init())
+    .plugin(tauri_plugin_dialog::init())
+    .plugin(tauri_plugin_opener::init())
     .manage(EngineProcess(Mutex::new(None)))
     .setup(|app| {
       if cfg!(debug_assertions) {
@@ -18,10 +22,14 @@ pub fn run() {
             .build(),
         )?;
       }
-      // Se lanza tanto en `tauri dev` como en el build empaquetado. El flujo con
-      // solo Vite (`pnpm dev`, sin ventana nativa) no pasa por acá.
-      let (_events, child) = app.shell().sidecar("ultrathing-engine")?.spawn()?;
-      *app.state::<EngineProcess>().0.lock().unwrap() = Some(child);
+      // Solo en release (app empaquetada) lanzamos el motor como sidecar. En dev el
+      // motor se corre a mano (`pnpm engine`) con el código más reciente; lanzar el
+      // sidecar aquí competiría por el puerto 8787 con un binario viejo.
+      #[cfg(not(debug_assertions))]
+      {
+        let (_events, child) = app.shell().sidecar("ultrathing-engine")?.spawn()?;
+        *app.state::<EngineProcess>().0.lock().unwrap() = Some(child);
+      }
 
       // En Linux (WebKitGTK) el micrófono/cámara están bloqueados por defecto: hay que
       // habilitar el media-stream y aceptar la petición de permiso (getUserMedia del

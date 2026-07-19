@@ -42,7 +42,7 @@ async def start(
         run_job(
             job,
             lambda j, report: download(
-                str(body.url), report, user_id, token, body.format, body.quality
+                str(body.url), report, user_id, token, body.format, body.quality, body.dest
             ),
         ),
     )

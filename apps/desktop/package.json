@@ -14,6 +14,8 @@
     "@ultrathing/core": "workspace:*",
     "@ultrathing/features": "workspace:*",
     "@ultrathing/ui": "workspace:*",
+    "@tauri-apps/plugin-dialog": "^2.0.0",
+    "@tauri-apps/plugin-opener": "^2.0.0",
     "lucide-react": "^0.446.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

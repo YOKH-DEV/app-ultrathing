@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { open } from '@tauri-apps/plugin-dialog';
+import { openPath } from '@tauri-apps/plugin-opener';
 import { Button, Card } from '@ultrathing/ui';
 import {
   engineClient,
@@ -28,13 +30,26 @@ function fmtDuration(s: number | null): string {
   return `${h ? `${h}:` : ''}${mm}:${String(sec).padStart(2, '0')}`;
 }
 
-/** Descarga rápida: pega una URL, elige mp3/mp4 y calidad, y baja el archivo. */
+/** Lo que devuelve el job del downloader al terminar (result). */
+interface DownloadDone {
+  title: string;
+  filepath: string;
+  ext: string;
+}
+
+type Phase = 'idle' | 'downloading' | 'processing' | 'done' | 'error';
+
+/** Descarga rápida: elige carpeta, formato y calidad; barra real y ruta del archivo. */
 export function DownloaderPage() {
-  const [progress, setProgress] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [url, setUrl] = useState('');
   const [format, setFormat] = useState<DownloadFormat>('mp4');
   const [quality, setQuality] = useState<DownloadQuality>('mejor');
+  const [dest, setDest] = useState<string | null>(null);
+
+  const [phase, setPhase] = useState<Phase>('idle');
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState<{ folder: string; filename: string } | null>(null);
   const [history, setHistory] = useState<DownloadHistoryItem[]>([]);
 
   async function refreshHistory() {
@@ -49,22 +64,47 @@ export function DownloaderPage() {
     void refreshHistory();
   }, []);
 
+  async function chooseFolder() {
+    const picked = await open({ directory: true, title: 'Elegir carpeta de descarga' });
+    if (typeof picked === 'string') setDest(picked);
+  }
+
   async function handleDownload() {
+    setPhase('downloading');
     setProgress(0);
     setError(null);
+    setSaved(null);
     try {
-      const { job_id } = await engineClient.downloader.start(url, format, quality);
+      const { job_id } = await engineClient.downloader.start(
+        url,
+        format,
+        quality,
+        dest ?? undefined,
+      );
       const stop = streamJob(job_id, (job) => {
         setProgress(job.progress);
-        if (job.status === 'error') setError(job.error ?? 'La descarga falló.');
-        if (job.status === 'done' || job.status === 'error') {
+        // Tras bajar al 100%, ffmpeg convierte/une: el job sigue "running" un rato.
+        if (job.status === 'running') setPhase(job.progress >= 99 ? 'processing' : 'downloading');
+        if (job.status === 'error') {
+          setError(job.error ?? 'La descarga falló.');
+          setPhase('error');
           stop();
-          if (job.status === 'done') void refreshHistory();
+        }
+        if (job.status === 'done') {
+          stop();
+          const r = job.result as DownloadDone | null;
+          if (r?.filepath) {
+            const i = r.filepath.lastIndexOf('/');
+            setSaved({ folder: r.filepath.slice(0, i), filename: r.filepath.slice(i + 1) });
+          }
+          setProgress(100);
+          setPhase('done');
+          void refreshHistory();
         }
       });
     } catch {
-      setProgress(null);
       setError('No se pudo conectar con el motor.');
+      setPhase('error');
     }
   }
 
@@ -72,6 +112,8 @@ export function DownloaderPage() {
     await engineClient.downloader.clearHistory();
     void refreshHistory();
   }
+
+  const busy = phase === 'downloading' || phase === 'processing';
 
   return (
     <div>
@@ -87,12 +129,12 @@ export function DownloaderPage() {
             placeholder="Pega una URL…"
             className="h-10 flex-1 rounded border border-line bg-elevated px-3 text-sm text-text outline-none focus:border-gold"
           />
-          <Button onClick={handleDownload} disabled={!url.trim()}>
-            Descargar
+          <Button onClick={handleDownload} disabled={!url.trim() || busy}>
+            {busy ? 'Descargando…' : 'Descargar'}
           </Button>
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           <select
             value={format}
             onChange={(e) => setFormat(e.target.value as DownloadFormat)}
@@ -114,13 +156,52 @@ export function DownloaderPage() {
               ))}
             </select>
           )}
+          <Button variant="ghost" size="sm" onClick={chooseFolder}>
+            Elegir carpeta
+          </Button>
+          <span className="truncate text-xs text-text-faint" title={dest ?? ''}>
+            {dest ?? 'Carpeta por defecto (~/Ultrathing)'}
+          </span>
         </div>
 
-        {progress !== null && (
-          <div className="mt-3 h-1.5 w-full overflow-hidden rounded bg-elevated">
-            <div className="h-full bg-gold transition-all" style={{ width: `${progress}%` }} />
+        {/* Barra de progreso real */}
+        {phase !== 'idle' && phase !== 'error' && (
+          <div className="mt-4">
+            <div className="mb-1 flex justify-between text-xs text-text-muted">
+              <span>
+                {phase === 'downloading' && 'Descargando…'}
+                {phase === 'processing' && 'Procesando el archivo (convirtiendo/uniendo)…'}
+                {phase === 'done' && '✓ Descarga completa'}
+              </span>
+              <span>{Math.round(progress)}%</span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded bg-elevated">
+              <div
+                className={`h-full transition-all ${phase === 'done' ? 'bg-[var(--success)]' : 'bg-gold'}`}
+                style={{ width: `${progress}%` }}
+              />
+            </div>
           </div>
         )}
+
+        {/* Confirmación con ruta local + abrir carpeta */}
+        {phase === 'done' && saved && (
+          <div className="mt-3 rounded border border-line bg-elevated p-3 text-sm">
+            <p className="text-text">
+              <span className="text-[var(--success)]">✓ Guardado:</span> {saved.filename}
+            </p>
+            <p className="mt-1 break-all text-xs text-text-muted">En: {saved.folder}</p>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => void openPath(saved.folder)}
+              className="mt-2"
+            >
+              Abrir carpeta
+            </Button>
+          </div>
+        )}
+
         {error && <p className="mt-3 text-sm text-[var(--danger)]">{error}</p>}
       </Card>
 

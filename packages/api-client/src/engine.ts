@@ -64,8 +64,12 @@ export type DownloadQuality = 'mejor' | '2160' | '1440' | '1080' | '720';
 /** Cliente tipado del motor. Lo usan el escritorio y la web (el copywriter es surface: both). */
 export const engineClient = {
   downloader: {
-    start: (url: string, format: DownloadFormat = 'mp4', quality: DownloadQuality = 'mejor') =>
-      post<{ job_id: string }>('/modules/downloader/start', { url, format, quality }),
+    start: (
+      url: string,
+      format: DownloadFormat = 'mp4',
+      quality: DownloadQuality = 'mejor',
+      dest?: string,
+    ) => post<{ job_id: string }>('/modules/downloader/start', { url, format, quality, dest }),
     history: () => request<DownloadHistoryItem[]>('/modules/downloader/history', 'GET'),
     clearHistory: () => request<{ status: string }>('/modules/downloader/history', 'DELETE'),
   },

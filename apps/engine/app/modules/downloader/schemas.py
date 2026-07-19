@@ -12,6 +12,7 @@ class StartDownload(BaseModel):
     url: HttpUrl
     format: Format = "mp4"
     quality: Quality = "mejor"
+    dest: str | None = None  # carpeta local elegida; None = carpeta por defecto
 
 
 class DownloadResult(BaseModel):
