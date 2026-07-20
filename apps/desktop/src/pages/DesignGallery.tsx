@@ -22,6 +22,17 @@ export function DesignGallery() {
     if (design) navigate(`/diseno/${design.id}`);
   }
 
+  async function handleDelete(id: string) {
+    try {
+      await deleteDesign(id);
+    } catch (err) {
+      // useDesigns() vuelve a cargar por Realtime; si el borrado fue rechazado
+      // (RLS, fila ya borrada) la fila simplemente sigue en la lista. No hay
+      // toast en esta fase (fuera de alcance); al menos no tragamos el error.
+      console.error('No se pudo eliminar el diseño:', err);
+    }
+  }
+
   return (
     <div>
       <h2 className="mb-1 font-display text-2xl text-text">Diseño</h2>
@@ -70,7 +81,7 @@ export function DesignGallery() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => deleteDesign(d.id)}
+                  onClick={() => handleDelete(d.id)}
                   className="mt-2 text-xs text-text-faint transition-colors hover:text-[var(--danger)]"
                 >
                   Eliminar

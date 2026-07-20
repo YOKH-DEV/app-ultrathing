@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { Tables, DesignBackground, DesignElement } from '@ultrathing/core';
+import type { Tables, DesignBackground, DesignElement, Json } from '@ultrathing/core';
 import { supabase } from './supabase';
 
 export type Design = Tables<'designs'>;
@@ -56,7 +56,9 @@ export async function createDesign(input: {
   return data ?? null;
 }
 
-/** Actualiza campos editables de un diseño y marca updated_at. */
+/** Actualiza campos editables de un diseño y marca updated_at. Lanza si Supabase
+ * devuelve error (RLS denegado, fila borrada en paralelo, violación de constraint, etc.)
+ * para que quien llama no informe éxito falso. */
 export async function updateDesign(
   id: string,
   patch: {
@@ -66,13 +68,26 @@ export async function updateDesign(
     thumbnail?: string | null;
   },
 ): Promise<void> {
-  await supabase
+  const { error } = await supabase
     .from('designs')
-    .update({ ...patch, updated_at: new Date().toISOString() } as never)
+    .update({
+      title: patch.title,
+      // DesignBackground/DesignElement son interfaces "cerradas" que no satisfacen
+      // Json estructuralmente (sin index signature); el cast se acota a estos dos
+      // campos para que el resto del payload (nombres de campo, tipos) siga
+      // type-checked por el Update generado de Supabase.
+      background: patch.background as unknown as Json | undefined,
+      elements: patch.elements as unknown as Json | undefined,
+      thumbnail: patch.thumbnail,
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', id);
+  if (error) throw error;
 }
 
-/** Elimina un diseño. */
+/** Elimina un diseño. Lanza si Supabase devuelve error, para que quien llama no
+ * asuma silenciosamente que el borrado tuvo éxito. */
 export async function deleteDesign(id: string): Promise<void> {
-  await supabase.from('designs').delete().eq('id', id);
+  const { error } = await supabase.from('designs').delete().eq('id', id);
+  if (error) throw error;
 }
