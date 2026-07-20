@@ -5,6 +5,7 @@ import { ImagePage } from './ImagePage';
 import { FilesPage } from './FilesPage';
 import { ScraperPage } from './ScraperPage';
 import { LeadsPage } from './LeadsPage';
+import { DesignGallery } from './DesignGallery';
 
 /**
  * Páginas de módulos ya construidos, indexadas por `route`.
@@ -20,4 +21,5 @@ export const pageByRoute: Record<string, ComponentType> = {
   '/copywriter': CopywriterPanel,
   '/voz': VoiceToTextPanel,
   '/ocr': OcrPanel,
+  '/diseno': DesignGallery,
 };
