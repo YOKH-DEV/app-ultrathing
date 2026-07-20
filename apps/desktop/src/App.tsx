@@ -4,6 +4,7 @@ import { useSession, type Session } from '@ultrathing/api-client';
 import { LoginScreen } from './auth/LoginScreen';
 import { Layout } from './shell/Layout';
 import { ComingSoon } from './pages/ComingSoon';
+import { DesignEditor } from './pages/DesignEditor';
 import { pageByRoute } from './pages';
 import './features';
 
@@ -42,6 +43,7 @@ function Shell({ session }: { session: Session | null }) {
               />
             );
           })}
+          <Route path="/diseno/:id" element={<DesignEditor />} />
           <Route path="*" element={<Navigate to={home} replace />} />
         </Route>
       </Routes>
