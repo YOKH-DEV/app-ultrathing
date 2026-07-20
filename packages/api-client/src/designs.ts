@@ -4,17 +4,28 @@ import { supabase } from './supabase';
 
 export type Design = Tables<'designs'>;
 
+/** Fila resumida para la galería: sin `background`/`elements` (JSON potencialmente
+ * grande) ni columnas que no se muestran. Evita traer cada diseño completo solo para
+ * pintar un título y un WxH — importa sobre todo cuando la Fase 2 autoguarde ~1×/s. */
+export type DesignSummary = Pick<
+  Design,
+  'id' | 'title' | 'width' | 'height' | 'thumbnail' | 'updated_at'
+>;
+
+const GALLERY_COLUMNS = 'id, title, width, height, thumbnail, updated_at';
+
 /** Lista de diseños del usuario, en vivo (Realtime). RLS acota a las filas propias.
- * Mismo patrón que useLeads. */
-export function useDesigns(): { designs: Design[]; loading: boolean } {
-  const [designs, setDesigns] = useState<Design[]>([]);
+ * Mismo patrón que useLeads. Trae solo las columnas que la galería pinta (ver
+ * DesignSummary); para el diseño completo usar getDesign(). */
+export function useDesigns(): { designs: DesignSummary[]; loading: boolean } {
+  const [designs, setDesigns] = useState<DesignSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       const { data } = await supabase
         .from('designs')
-        .select('*')
+        .select(GALLERY_COLUMNS)
         .order('updated_at', { ascending: false });
       setDesigns(data ?? []);
       setLoading(false);
@@ -38,8 +49,11 @@ export async function getDesign(id: string): Promise<Design | null> {
   return data;
 }
 
-/** Crea un diseño vacío con el tamaño elegido. Devuelve la fila creada (o null si falla,
- * p.ej. sin sesión bajo el bypass de auth). El user_id lo pone RLS/DEFAULT del token. */
+/** Crea un diseño vacío con el tamaño elegido. Devuelve `null` (sin lanzar) si no hay
+ * sesión — bajo el bypass de auth de desarrollo eso es el estado normal, y quien llama
+ * lo distingue de un error real para mostrar el mensaje correcto. Si hay sesión pero
+ * Supabase devuelve error, lanza (igual que updateDesign/deleteDesign) para que quien
+ * llama no informe éxito falso. El user_id lo pone RLS/DEFAULT del token. */
 export async function createDesign(input: {
   title: string;
   width: number;
@@ -48,12 +62,13 @@ export async function createDesign(input: {
   const { data: userData } = await supabase.auth.getUser();
   const userId = userData.user?.id;
   if (!userId) return null;
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('designs')
     .insert({ user_id: userId, title: input.title, width: input.width, height: input.height })
     .select('*')
     .single();
-  return data ?? null;
+  if (error) throw error;
+  return data;
 }
 
 /** Actualiza campos editables de un diseño y marca updated_at. Lanza si Supabase

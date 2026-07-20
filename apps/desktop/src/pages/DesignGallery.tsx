@@ -10,16 +10,31 @@ export function DesignGallery() {
   const navigate = useNavigate();
   const [preset, setPreset] = useState<CanvasPreset>(CANVAS_PRESETS[0]);
   const [creating, setCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleNew() {
     setCreating(true);
-    const design = await createDesign({
-      title: 'Diseño sin título',
-      width: preset.width,
-      height: preset.height,
-    });
-    setCreating(false);
-    if (design) navigate(`/diseno/${design.id}`);
+    setError(null);
+    try {
+      const design = await createDesign({
+        title: 'Diseño sin título',
+        width: preset.width,
+        height: preset.height,
+      });
+      if (design) {
+        navigate(`/diseno/${design.id}`);
+      } else {
+        // Sin sesión bajo el bypass de auth de desarrollo: estado normal por ahora
+        // (la sesión anónima automática llega en una fase aparte), pero no debe
+        // pasar en silencio — el usuario cree que "+ Crear" no hizo nada.
+        setError('No hay una sesión activa: los diseños todavía no se pueden guardar.');
+      }
+    } catch (err) {
+      console.error('No se pudo crear el diseño:', err);
+      setError('No se pudo crear el diseño. Inténtalo de nuevo.');
+    } finally {
+      setCreating(false);
+    }
   }
 
   async function handleDelete(id: string) {
@@ -27,9 +42,9 @@ export function DesignGallery() {
       await deleteDesign(id);
     } catch (err) {
       // useDesigns() vuelve a cargar por Realtime; si el borrado fue rechazado
-      // (RLS, fila ya borrada) la fila simplemente sigue en la lista. No hay
-      // toast en esta fase (fuera de alcance); al menos no tragamos el error.
+      // (RLS, fila ya borrada) la fila simplemente sigue en la lista.
       console.error('No se pudo eliminar el diseño:', err);
+      setError('No se pudo eliminar el diseño. Inténtalo de nuevo.');
     }
   }
 
@@ -59,6 +74,8 @@ export function DesignGallery() {
           </Button>
         </div>
       </Card>
+
+      {error && <p className="mt-3 text-sm text-[var(--danger)]">{error}</p>}
 
       <div className="mt-6">
         {loading ? (
