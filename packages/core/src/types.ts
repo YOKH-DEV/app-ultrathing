@@ -40,6 +40,28 @@ export interface DesignElement {
   props: Record<string, unknown>;
 }
 
+/** `props` de un elemento de texto (Fase 2). Coincide con los atributos que Konva.Text
+ * entiende, para volcarlos directo al nodo. */
+export interface TextElementProps {
+  text: string;
+  fontSize: number;
+  fontFamily: string;
+  fill: string;
+  /** Konva combina estilo y peso en un string: 'normal' | 'bold' | 'italic' | 'italic bold'. */
+  fontStyle: string;
+  align: 'left' | 'center' | 'right';
+}
+
+/** Fuentes ofrecidas en el panel de propiedades (seguras en cualquier sistema). */
+export const DESIGN_FONTS = [
+  'Inter',
+  'Arial',
+  'Georgia',
+  'Times New Roman',
+  'Courier New',
+  'Verdana',
+] as const;
+
 /** Preset de tamaño al crear un diseño. */
 export interface CanvasPreset {
   id: string;

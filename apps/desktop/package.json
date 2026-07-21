@@ -10,15 +10,17 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.56.0",
+    "@tauri-apps/plugin-dialog": "^2.0.0",
+    "@tauri-apps/plugin-opener": "^2.0.0",
     "@ultrathing/api-client": "workspace:*",
     "@ultrathing/core": "workspace:*",
     "@ultrathing/features": "workspace:*",
     "@ultrathing/ui": "workspace:*",
-    "@tauri-apps/plugin-dialog": "^2.0.0",
-    "@tauri-apps/plugin-opener": "^2.0.0",
+    "konva": "^10.3.0",
     "lucide-react": "^0.446.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-konva": "^19.2.5",
     "react-router-dom": "^7.18.1"
   },
   "devDependencies": {
