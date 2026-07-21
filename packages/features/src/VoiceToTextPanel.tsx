@@ -65,7 +65,14 @@ export function VoiceToTextPanel() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  // Histórico de deshacer: solo en memoria (nada se persiste). Máx 3 estados
+  // anteriores; al superar 3 se descarta el más viejo, así no crece sin fin.
+  const [history, setHistory] = useState<string[]>([]);
 
+  const textRef = useRef(text);
+  const historyRef = useRef<string[]>([]);
+  const typingBurstRef = useRef(false);
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ctxRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
@@ -88,6 +95,46 @@ export function VoiceToTextPanel() {
   }
 
   useEffect(() => stopAudioNodes, []);
+
+  // Mantiene textRef con el último valor confirmado. En un onChange, textRef aún
+  // tiene el valor PREVIO (este efecto corre tras el render) → ideal para snapshot.
+  useEffect(() => {
+    textRef.current = text;
+  }, [text]);
+
+  /** Apila el texto dado como estado anterior, conservando solo los últimos 3. */
+  function pushHistory(prev: string) {
+    const next = [...historyRef.current, prev].slice(-3);
+    historyRef.current = next;
+    setHistory(next);
+  }
+
+  /** Registra el valor previo UNA vez por ráfaga de tecleo. Una pausa (~1s)
+   * cierra la ráfaga, así una edición seguida cuenta como un solo paso de deshacer. */
+  function snapshotBeforeTyping() {
+    if (!typingBurstRef.current) {
+      pushHistory(textRef.current);
+      typingBurstRef.current = true;
+    }
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(() => {
+      typingBurstRef.current = false;
+    }, 1000);
+  }
+
+  /** Devuelve el texto al estado anterior más reciente. */
+  function undo() {
+    const h = historyRef.current;
+    if (h.length === 0) return;
+    const prev = h[h.length - 1];
+    const next = h.slice(0, -1);
+    historyRef.current = next;
+    setHistory(next);
+    typingBurstRef.current = false; // el próximo tecleo abre una ráfaga nueva
+    setText(prev);
+    textRef.current = prev;
+    setCopied(false);
+  }
 
   async function startRecording() {
     setError(null);
@@ -151,6 +198,7 @@ export function VoiceToTextPanel() {
     try {
       // tier 'preciso' (whisper small) + cleanup=true → texto completo, exacto y organizado.
       const { clean } = await engineClient.voz.transcribe(blob, true, lang || undefined, 'preciso');
+      if (textRef.current) pushHistory(textRef.current); // poder deshacer lo recién agregado
       setText((prev) => (prev ? `${prev.replace(/\s*$/, '')} ${clean}` : clean));
     } catch {
       setError('No se pudo transcribir. Revisa que el motor esté activo.');
@@ -204,7 +252,25 @@ export function VoiceToTextPanel() {
           )}
           {loading && <span className="text-sm text-text-faint">Organizando el texto…</span>}
           <div className="ml-auto flex gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setText('')} disabled={!text}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={undo}
+              disabled={history.length === 0 || recording || loading}
+              title="Devolver el texto al estado anterior (hasta 3 pasos)"
+            >
+              ↶ Deshacer{history.length > 0 ? ` (${history.length})` : ''}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                pushHistory(text);
+                setText('');
+                typingBurstRef.current = false;
+              }}
+              disabled={!text}
+            >
               Limpiar
             </Button>
             <Button variant="ghost" size="sm" onClick={handleCopy} disabled={!text}>
@@ -218,6 +284,7 @@ export function VoiceToTextPanel() {
         <textarea
           value={text}
           onChange={(e) => {
+            snapshotBeforeTyping();
             setText(e.target.value);
             setCopied(false);
           }}
