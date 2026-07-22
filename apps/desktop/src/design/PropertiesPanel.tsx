@@ -1,11 +1,31 @@
-import { Bold, Italic, AlignLeft, AlignCenter, AlignRight, Trash2 } from 'lucide-react';
+import {
+  Bold,
+  Italic,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Trash2,
+  BringToFront,
+  SendToBack,
+  Eraser,
+} from 'lucide-react';
 import { Button } from '@ultrathing/ui';
-import { DESIGN_FONTS, type DesignElement, type TextElementProps } from '@ultrathing/core';
+import {
+  DESIGN_FONTS,
+  type DesignElement,
+  type TextElementProps,
+  type ShapeElementProps,
+} from '@ultrathing/core';
 
 interface PropertiesPanelProps {
   element: DesignElement | null;
   onChangeProps: (patch: Partial<TextElementProps>) => void;
+  onChangeShapeProps: (patch: Partial<ShapeElementProps>) => void;
   onChangeElement: (patch: Partial<DesignElement>) => void;
+  onBringToFront: () => void;
+  onSendToBack: () => void;
+  onRemoveBg: () => void;
+  removingBg: boolean;
   onDelete: () => void;
 }
 
@@ -19,20 +39,26 @@ function hasBold(fontStyle: string) {
 function hasItalic(fontStyle: string) {
   return fontStyle.includes('italic');
 }
-/** Compone el string que Konva espera a partir de los toggles. */
 function composeFontStyle(bold: boolean, italic: boolean): string {
   const parts = [italic ? 'italic' : '', bold ? 'bold' : ''].filter(Boolean);
   return parts.join(' ') || 'normal';
 }
 
-/**
- * Panel derecho: propiedades del elemento seleccionado. En la Fase 2 solo texto.
- * Sin selección, muestra una pista.
- */
+const toggleClass = (active: boolean) =>
+  `grid h-8 w-8 place-items-center rounded border ${
+    active ? 'border-gold bg-gold text-[var(--on-gold)]' : 'border-line text-text'
+  }`;
+
+/** Panel derecho: propiedades del elemento seleccionado, distintas por tipo. */
 export function PropertiesPanel({
   element,
   onChangeProps,
+  onChangeShapeProps,
   onChangeElement,
+  onBringToFront,
+  onSendToBack,
+  onRemoveBg,
+  removingBg,
   onDelete,
 }: PropertiesPanelProps) {
   if (!element) {
@@ -43,19 +69,74 @@ export function PropertiesPanel({
     );
   }
 
+  return (
+    <div className="flex w-56 shrink-0 flex-col gap-3">
+      {element.type === 'text' && (
+        <TextProps element={element} onChangeProps={onChangeProps} />
+      )}
+      {element.type === 'shape' && (
+        <ShapeProps element={element} onChangeShapeProps={onChangeShapeProps} />
+      )}
+      {element.type === 'image' && (
+        <ImageProps removingBg={removingBg} onRemoveBg={onRemoveBg} />
+      )}
+
+      {/* Comunes a todos los tipos */}
+      <div>
+        <label className={fieldLabel}>Opacidad · {Math.round(element.opacity * 100)}%</label>
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.05}
+          value={element.opacity}
+          onChange={(e) => onChangeElement({ opacity: Number(e.target.value) })}
+          className="w-full accent-[var(--gold)]"
+        />
+      </div>
+
+      <div>
+        <label className={fieldLabel}>Rotación · {Math.round(element.rotation)}°</label>
+        <input
+          type="range"
+          min={0}
+          max={360}
+          step={1}
+          value={element.rotation}
+          onChange={(e) => onChangeElement({ rotation: Number(e.target.value) })}
+          className="w-full accent-[var(--gold)]"
+        />
+      </div>
+
+      <div className="flex gap-1">
+        <button className={`${toggleClass(false)} w-auto px-2`} title="Traer al frente" onClick={onBringToFront}>
+          <BringToFront size={15} />
+        </button>
+        <button className={`${toggleClass(false)} w-auto px-2`} title="Enviar al fondo" onClick={onSendToBack}>
+          <SendToBack size={15} />
+        </button>
+      </div>
+
+      <Button variant="ghost" size="sm" onClick={onDelete}>
+        <Trash2 size={15} className="mr-1 inline" /> Eliminar
+      </Button>
+    </div>
+  );
+}
+
+function TextProps({
+  element,
+  onChangeProps,
+}: {
+  element: DesignElement;
+  onChangeProps: (patch: Partial<TextElementProps>) => void;
+}) {
   const p = element.props as unknown as TextElementProps;
   const bold = hasBold(p.fontStyle);
   const italic = hasItalic(p.fontStyle);
-
-  const toggleClass = (active: boolean) =>
-    `grid h-8 w-8 place-items-center rounded border ${
-      active ? 'border-gold bg-gold text-[var(--on-gold)]' : 'border-line text-text'
-    }`;
-
   return (
-    <div className="flex w-56 shrink-0 flex-col gap-3">
+    <>
       <p className="text-xs uppercase tracking-wide text-text-faint">Texto</p>
-
       <div>
         <label className={fieldLabel}>Contenido</label>
         <textarea
@@ -65,7 +146,6 @@ export function PropertiesPanel({
           className={`${inputBase} resize-y`}
         />
       </div>
-
       <div className="flex gap-2">
         <div className="flex-1">
           <label className={fieldLabel}>Fuente</label>
@@ -93,7 +173,6 @@ export function PropertiesPanel({
           />
         </div>
       </div>
-
       <div className="flex items-end gap-2">
         <div>
           <label className={fieldLabel}>Color</label>
@@ -136,36 +215,70 @@ export function PropertiesPanel({
           })}
         </div>
       </div>
+    </>
+  );
+}
 
-      <div>
-        <label className={fieldLabel}>Opacidad · {Math.round(element.opacity * 100)}%</label>
-        <input
-          type="range"
-          min={0}
-          max={1}
-          step={0.05}
-          value={element.opacity}
-          onChange={(e) => onChangeElement({ opacity: Number(e.target.value) })}
-          className="w-full accent-[var(--gold)]"
-        />
+function ShapeProps({
+  element,
+  onChangeShapeProps,
+}: {
+  element: DesignElement;
+  onChangeShapeProps: (patch: Partial<ShapeElementProps>) => void;
+}) {
+  const p = element.props as unknown as ShapeElementProps;
+  const label = p.variant === 'rect' ? 'Rectángulo' : p.variant === 'circle' ? 'Círculo' : 'Línea';
+  return (
+    <>
+      <p className="text-xs uppercase tracking-wide text-text-faint">{label}</p>
+      {p.variant !== 'line' && (
+        <div className="flex items-end gap-2">
+          <div>
+            <label className={fieldLabel}>Relleno</label>
+            <input
+              type="color"
+              value={p.fill === 'transparent' ? '#000000' : p.fill}
+              onChange={(e) => onChangeShapeProps({ fill: e.target.value })}
+              className="h-8 w-10 cursor-pointer rounded border border-line bg-elevated"
+            />
+          </div>
+        </div>
+      )}
+      <div className="flex items-end gap-2">
+        <div>
+          <label className={fieldLabel}>Borde</label>
+          <input
+            type="color"
+            value={p.stroke}
+            onChange={(e) => onChangeShapeProps({ stroke: e.target.value })}
+            className="h-8 w-10 cursor-pointer rounded border border-line bg-elevated"
+          />
+        </div>
+        <div className="flex-1">
+          <label className={fieldLabel}>Grosor · {p.strokeWidth}px</label>
+          <input
+            type="range"
+            min={0}
+            max={40}
+            step={1}
+            value={p.strokeWidth}
+            onChange={(e) => onChangeShapeProps({ strokeWidth: Number(e.target.value) })}
+            className="w-full accent-[var(--gold)]"
+          />
+        </div>
       </div>
+    </>
+  );
+}
 
-      <div>
-        <label className={fieldLabel}>Rotación · {Math.round(element.rotation)}°</label>
-        <input
-          type="range"
-          min={0}
-          max={360}
-          step={1}
-          value={element.rotation}
-          onChange={(e) => onChangeElement({ rotation: Number(e.target.value) })}
-          className="w-full accent-[var(--gold)]"
-        />
-      </div>
-
-      <Button variant="ghost" size="sm" onClick={onDelete}>
-        <Trash2 size={15} className="mr-1 inline" /> Eliminar
+function ImageProps({ removingBg, onRemoveBg }: { removingBg: boolean; onRemoveBg: () => void }) {
+  return (
+    <>
+      <p className="text-xs uppercase tracking-wide text-text-faint">Imagen</p>
+      <Button variant="ghost" size="sm" onClick={onRemoveBg} disabled={removingBg}>
+        <Eraser size={15} className="mr-1 inline" />
+        {removingBg ? 'Quitando fondo…' : 'Quitar fondo'}
       </Button>
-    </div>
+    </>
   );
 }

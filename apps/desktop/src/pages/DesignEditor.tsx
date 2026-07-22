@@ -148,6 +148,35 @@ export function DesignEditor() {
     [selectedId],
   );
 
+  const updateSelectedShapeProps = useCallback(
+    (patch: Partial<ShapeElementProps>) => {
+      if (!selectedId) return;
+      setElements((els) =>
+        els.map((e) => (e.id === selectedId ? { ...e, props: { ...e.props, ...patch } } : e)),
+      );
+      setDirty(true);
+    },
+    [selectedId],
+  );
+
+  const bringToFront = useCallback(() => {
+    if (!selectedId) return;
+    setElements((els) => {
+      const maxZ = els.reduce((m, e) => Math.max(m, e.zIndex), 0);
+      return els.map((e) => (e.id === selectedId ? { ...e, zIndex: maxZ + 1 } : e));
+    });
+    setDirty(true);
+  }, [selectedId]);
+
+  const sendToBack = useCallback(() => {
+    if (!selectedId) return;
+    setElements((els) => {
+      const minZ = els.reduce((m, e) => Math.min(m, e.zIndex), 0);
+      return els.map((e) => (e.id === selectedId ? { ...e, zIndex: minZ - 1 } : e));
+    });
+    setDirty(true);
+  }, [selectedId]);
+
   const removeSelected = useCallback(() => {
     if (!selectedId) return;
     setElements((els) => els.filter((e) => e.id !== selectedId));
@@ -264,7 +293,12 @@ export function DesignEditor() {
         <PropertiesPanel
           element={selected}
           onChangeProps={updateSelectedProps}
+          onChangeShapeProps={updateSelectedShapeProps}
           onChangeElement={(patch) => selectedId && updateElement(selectedId, patch)}
+          onBringToFront={bringToFront}
+          onSendToBack={sendToBack}
+          onRemoveBg={() => {}}
+          removingBg={false}
           onDelete={removeSelected}
         />
       </div>
