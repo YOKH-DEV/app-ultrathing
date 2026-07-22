@@ -52,6 +52,23 @@ export interface TextElementProps {
   align: 'left' | 'center' | 'right';
 }
 
+/** `props` de un elemento de imagen (Fase 3). La imagen se guarda como dataURL
+ * embebido en el JSON del diseño (ver spec §5; subir a Storage es fase futura). */
+export interface ImageElementProps {
+  src: string; // dataURL "data:image/...;base64,..."
+}
+
+/** Variantes de forma soportadas (Fase 3). */
+export type ShapeVariant = 'rect' | 'circle' | 'line';
+
+/** `props` de un elemento de forma (Fase 3). `fill` se ignora en 'line'. */
+export interface ShapeElementProps {
+  variant: ShapeVariant;
+  fill: string;
+  stroke: string;
+  strokeWidth: number;
+}
+
 /** Fuentes ofrecidas en el panel de propiedades (seguras en cualquier sistema). */
 export const DESIGN_FONTS = [
   'Inter',
