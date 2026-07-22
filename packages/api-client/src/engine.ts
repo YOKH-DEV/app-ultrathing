@@ -79,6 +79,13 @@ export const engineClient = {
       form.append('file', file);
       return postForm<{ job_id: string }>('/modules/image/remove-bg', form);
     },
+    // Versión síncrona para el editor: devuelve el PNG sin fondo como dataURL,
+    // sin job ni persistencia (ver /modules/image/remove-bg-inline del motor).
+    removeBackgroundInline: (blob: Blob) => {
+      const form = new FormData();
+      form.append('file', blob, 'imagen.png');
+      return postForm<{ image: string }>('/modules/image/remove-bg-inline', form);
+    },
   },
   files: {
     pdfToCsv: (file: File) => {
