@@ -1,7 +1,13 @@
 import { useEffect, useRef } from 'react';
-import { Stage, Layer, Rect, Text, Transformer } from 'react-konva';
+import { Stage, Layer, Rect, Ellipse, Line, Text, Transformer } from 'react-konva';
 import type Konva from 'konva';
-import type { DesignElement, DesignBackground, TextElementProps } from '@ultrathing/core';
+import type {
+  DesignElement,
+  DesignBackground,
+  TextElementProps,
+  ShapeElementProps,
+} from '@ultrathing/core';
+import { ImageNode, bakeTransform } from './nodes';
 
 interface CanvasProps {
   width: number;
@@ -33,7 +39,7 @@ export function Canvas({
 }: CanvasProps) {
   const scale = Math.min(MAX_W / width, MAX_H / height, 1);
   const trRef = useRef<Konva.Transformer>(null);
-  const nodeRefs = useRef<Record<string, Konva.Text | null>>({});
+  const nodeRefs = useRef<Record<string, Konva.Node | null>>({});
 
   // Ata el Transformer al nodo seleccionado cada vez que cambia la selección o la lista.
   useEffect(() => {
@@ -45,6 +51,14 @@ export function Canvas({
   }, [selectedId, elements]);
 
   const bgFill = background?.type === 'color' ? background.value : '#ffffff';
+  const selectedType = elements.find((e) => e.id === selectedId)?.type ?? null;
+  // El texto solo escala en ancho; imagen y forma escalan en 2D (corners).
+  const anchors =
+    selectedType === 'text'
+      ? (['middle-left', 'middle-right'] as const)
+      : (['top-left', 'top-right', 'bottom-left', 'bottom-right'] as const);
+
+  const sorted = elements.slice().sort((a, b) => a.zIndex - b.zIndex);
 
   return (
     <Stage
@@ -61,54 +75,123 @@ export function Canvas({
       <Layer>
         <Rect x={0} y={0} width={width} height={height} fill={bgFill} listening={false} />
 
-        {elements
-          .slice()
-          .sort((a, b) => a.zIndex - b.zIndex)
-          .map((el) => {
-            if (el.type !== 'text') return null; // imágenes/formas: Fase 3
-            const props = el.props as unknown as TextElementProps;
+        {sorted.map((el) => {
+          const attach = (n: Konva.Node | null) => {
+            nodeRefs.current[el.id] = n;
+          };
+
+          if (el.type === 'image') {
             return (
-              <Text
+              <ImageNode key={el.id} ref={attach} el={el} onSelect={onSelect} onChange={onChange} />
+            );
+          }
+
+          if (el.type === 'shape') {
+            const p = el.props as unknown as ShapeElementProps;
+            const common = {
+              ref: attach,
+              rotation: el.rotation,
+              opacity: el.opacity,
+              draggable: true,
+              onClick: () => onSelect(el.id),
+              onTap: () => onSelect(el.id),
+              onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) =>
+                onChange(el.id, { x: e.target.x(), y: e.target.y() }),
+              onTransformEnd: (e: Konva.KonvaEventObject<Event>) =>
+                bakeTransform(e.target, el, onChange),
+            };
+            if (p.variant === 'circle') {
+              // Ellipse se posiciona por su centro; se mapea el bounding-box (x,y,w,h).
+              return (
+                <Ellipse
+                  key={el.id}
+                  {...common}
+                  x={el.x + el.width / 2}
+                  y={el.y + el.height / 2}
+                  radiusX={el.width / 2}
+                  radiusY={el.height / 2}
+                  fill={p.fill}
+                  stroke={p.stroke}
+                  strokeWidth={p.strokeWidth}
+                  onDragEnd={(e) =>
+                    onChange(el.id, {
+                      x: e.target.x() - el.width / 2,
+                      y: e.target.y() - el.height / 2,
+                    })
+                  }
+                />
+              );
+            }
+            if (p.variant === 'line') {
+              return (
+                <Line
+                  key={el.id}
+                  {...common}
+                  x={el.x}
+                  y={el.y}
+                  points={[0, 0, el.width, 0]}
+                  stroke={p.stroke}
+                  strokeWidth={p.strokeWidth}
+                />
+              );
+            }
+            return (
+              <Rect
                 key={el.id}
-                ref={(n) => {
-                  nodeRefs.current[el.id] = n;
-                }}
+                {...common}
                 x={el.x}
                 y={el.y}
-                width={el.width || undefined}
-                rotation={el.rotation}
-                opacity={el.opacity}
-                text={props.text}
-                fontSize={props.fontSize}
-                fontFamily={props.fontFamily}
-                fill={props.fill}
-                fontStyle={props.fontStyle}
-                align={props.align}
-                draggable
-                onClick={() => onSelect(el.id)}
-                onTap={() => onSelect(el.id)}
-                onDragEnd={(e) => onChange(el.id, { x: e.target.x(), y: e.target.y() })}
-                onTransformEnd={(e) => {
-                  const node = e.target as Konva.Text;
-                  const scaleX = node.scaleX();
-                  const newWidth = Math.max(20, node.width() * scaleX);
-                  node.scaleX(1);
-                  node.scaleY(1);
-                  onChange(el.id, {
-                    x: node.x(),
-                    y: node.y(),
-                    width: newWidth,
-                    rotation: node.rotation(),
-                  });
-                }}
+                width={el.width}
+                height={el.height}
+                fill={p.fill}
+                stroke={p.stroke}
+                strokeWidth={p.strokeWidth}
               />
             );
-          })}
+          }
+
+          // Texto (Fase 2)
+          const props = el.props as unknown as TextElementProps;
+          return (
+            <Text
+              key={el.id}
+              ref={attach}
+              x={el.x}
+              y={el.y}
+              width={el.width || undefined}
+              rotation={el.rotation}
+              opacity={el.opacity}
+              text={props.text}
+              fontSize={props.fontSize}
+              fontFamily={props.fontFamily}
+              fill={props.fill}
+              fontStyle={props.fontStyle}
+              align={props.align}
+              draggable
+              onClick={() => onSelect(el.id)}
+              onTap={() => onSelect(el.id)}
+              onDragEnd={(e) => onChange(el.id, { x: e.target.x(), y: e.target.y() })}
+              onTransformEnd={(e) => {
+                const node = e.target as Konva.Text;
+                const scaleX = node.scaleX();
+                const newWidth = Math.max(20, node.width() * scaleX);
+                node.scaleX(1);
+                node.scaleY(1);
+                onChange(el.id, {
+                  x: node.x(),
+                  y: node.y(),
+                  width: newWidth,
+                  rotation: node.rotation(),
+                });
+              }}
+            />
+          );
+        })}
 
         <Transformer
           ref={trRef}
           rotateEnabled
-          enabledAnchors={['middle-left', 'middle-right']}
+          enabledAnchors={anchors as unknown as string[]}
           boundBoxFunc={(oldBox, newBox) => (newBox.width < 20 ? oldBox : newBox)}
         />
       </Layer>
