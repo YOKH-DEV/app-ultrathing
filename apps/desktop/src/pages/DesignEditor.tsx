@@ -6,7 +6,14 @@ import {
   updateDesign,
   type Design,
 } from '@ultrathing/api-client';
-import type { DesignElement, DesignBackground, TextElementProps } from '@ultrathing/core';
+import type {
+  DesignElement,
+  DesignBackground,
+  TextElementProps,
+  ImageElementProps,
+  ShapeElementProps,
+  ShapeVariant,
+} from '@ultrathing/core';
 import { Canvas } from '../design/Canvas';
 import { Toolbar } from '../design/Toolbar';
 import { PropertiesPanel } from '../design/PropertiesPanel';
@@ -29,6 +36,64 @@ function newTextElement(canvasW: number, canvasH: number, zIndex: number): Desig
     y: Math.round(canvasH / 2 - 40),
     width,
     height: 0, // el texto crece con su contenido
+    rotation: 0,
+    opacity: 1,
+    zIndex,
+    props: props as unknown as Record<string, unknown>,
+  };
+}
+
+/** Crea un elemento de imagen escalado para caber en el lienzo, centrado. */
+function newImageElement(
+  canvasW: number,
+  canvasH: number,
+  zIndex: number,
+  dataUrl: string,
+  natW: number,
+  natH: number,
+): DesignElement {
+  const maxW = canvasW * 0.7;
+  const maxH = canvasH * 0.7;
+  const ratio = Math.min(maxW / natW, maxH / natH, 1);
+  const width = Math.round(natW * ratio);
+  const height = Math.round(natH * ratio);
+  const props: ImageElementProps = { src: dataUrl };
+  return {
+    id: crypto.randomUUID(),
+    type: 'image',
+    x: Math.round((canvasW - width) / 2),
+    y: Math.round((canvasH - height) / 2),
+    width,
+    height,
+    rotation: 0,
+    opacity: 1,
+    zIndex,
+    props: props as unknown as Record<string, unknown>,
+  };
+}
+
+/** Crea una forma centrada en el lienzo. */
+function newShapeElement(
+  canvasW: number,
+  canvasH: number,
+  zIndex: number,
+  variant: ShapeVariant,
+): DesignElement {
+  const width = Math.round(canvasW * 0.3);
+  const height = variant === 'line' ? 0 : Math.round(canvasW * 0.3);
+  const props: ShapeElementProps = {
+    variant,
+    fill: variant === 'line' ? 'transparent' : '#d4af37',
+    stroke: '#111111',
+    strokeWidth: variant === 'line' ? 4 : 2,
+  };
+  return {
+    id: crypto.randomUUID(),
+    type: 'shape',
+    x: Math.round((canvasW - width) / 2),
+    y: Math.round(canvasH / 2 - height / 2),
+    width,
+    height,
     rotation: 0,
     opacity: 1,
     zIndex,
@@ -99,6 +164,24 @@ export function DesignEditor() {
     setDirty(true);
   }
 
+  const nextZ = () => elements.reduce((m, e) => Math.max(m, e.zIndex), 0) + 1;
+
+  function addImage(dataUrl: string, natW: number, natH: number) {
+    if (!design) return;
+    const el = newImageElement(design.width, design.height, nextZ(), dataUrl, natW, natH);
+    setElements((els) => [...els, el]);
+    setSelectedId(el.id);
+    setDirty(true);
+  }
+
+  function addShape(variant: ShapeVariant) {
+    if (!design) return;
+    const el = newShapeElement(design.width, design.height, nextZ(), variant);
+    setElements((els) => [...els, el]);
+    setSelectedId(el.id);
+    setDirty(true);
+  }
+
   // Suprimir borra el elemento seleccionado (salvo si el foco está en un campo de texto).
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -164,7 +247,7 @@ export function DesignEditor() {
       {error && <p className="mb-3 text-sm text-[var(--danger)]">{error}</p>}
 
       <div className="flex gap-4">
-        <Toolbar onAddText={addText} />
+        <Toolbar onAddText={addText} onAddImage={addImage} onAddShape={addShape} />
 
         <div className="grid flex-1 place-items-center overflow-auto rounded border border-line bg-elevated p-6">
           <Canvas
