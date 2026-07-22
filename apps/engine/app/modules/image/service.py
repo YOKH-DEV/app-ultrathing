@@ -1,5 +1,6 @@
 """Lógica pura de imagen con rembg (quitar fondo). Sin FastAPI: testeable y reutilizable."""
 import asyncio
+import base64
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -43,3 +44,15 @@ async def remove_background(
     if user_id and token:
         await asyncio.to_thread(_persist, token, user_id, result)
     return result.model_dump()
+
+
+def _remove_bg_inline(data: bytes) -> str:
+    """Quita el fondo y devuelve el PNG como dataURL. No toca disco ni Supabase."""
+    output: bytes = remove(data)  # PNG con canal alpha
+    b64 = base64.b64encode(output).decode("ascii")
+    return f"data:image/png;base64,{b64}"
+
+
+async def remove_background_inline(data: bytes) -> str:
+    """Envuelve _remove_bg_inline en un hilo (rembg es bloqueante)."""
+    return await asyncio.to_thread(_remove_bg_inline, data)

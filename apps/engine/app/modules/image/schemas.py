@@ -6,3 +6,7 @@ class RemoveBgResult(BaseModel):
     title: str
     filepath: str
     ext: str
+
+
+class RemoveBgInlineResult(BaseModel):
+    image: str  # dataURL "data:image/png;base64,..."

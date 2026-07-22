@@ -5,7 +5,7 @@ from fastapi import APIRouter, File, Header, UploadFile
 
 from app.core.jobs import create_job, run_job
 from app.core.supabase import user_id_from_token
-from .service import remove_background
+from .service import remove_background, remove_background_inline
 
 router = APIRouter(prefix="/modules/image", tags=["image"])
 
@@ -30,3 +30,12 @@ async def remove_bg(
         run_job(job, lambda j, report: remove_background(data, filename, report, user_id, token)),
     )
     return {"job_id": job.id}
+
+
+@router.post("/remove-bg-inline")
+async def remove_bg_inline(file: UploadFile = File(...)) -> dict[str, str]:
+    """Versión síncrona para el editor: devuelve el PNG sin fondo como dataURL.
+    No usa job/disco/Supabase; el editor incrusta el resultado en el diseño."""
+    data = await file.read()
+    image = await remove_background_inline(data)
+    return {"image": image}
