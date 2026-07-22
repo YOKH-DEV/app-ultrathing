@@ -4,6 +4,7 @@ import { Button } from '@ultrathing/ui';
 import {
   getDesign,
   updateDesign,
+  engineClient,
   type Design,
 } from '@ultrathing/api-client';
 import type {
@@ -118,6 +119,7 @@ export function DesignEditor() {
   const [dirty, setDirty] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [removingBg, setRemovingBg] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -183,6 +185,23 @@ export function DesignEditor() {
     setSelectedId(null);
     setDirty(true);
   }, [selectedId]);
+
+  async function removeBgOnSelected() {
+    if (!selected || selected.type !== 'image') return;
+    const src = (selected.props as unknown as ImageElementProps).src;
+    setRemovingBg(true);
+    setError(null);
+    try {
+      // dataURL → Blob para subirlo como archivo al motor.
+      const blob = await (await fetch(src)).blob();
+      const { image } = await engineClient.image.removeBackgroundInline(blob);
+      updateSelectedProps({ src: image } as unknown as Partial<TextElementProps>);
+    } catch {
+      setError('No se pudo quitar el fondo. ¿El motor está corriendo?');
+    } finally {
+      setRemovingBg(false);
+    }
+  }
 
   function addText() {
     if (!design) return;
@@ -297,8 +316,8 @@ export function DesignEditor() {
           onChangeElement={(patch) => selectedId && updateElement(selectedId, patch)}
           onBringToFront={bringToFront}
           onSendToBack={sendToBack}
-          onRemoveBg={() => {}}
-          removingBg={false}
+          onRemoveBg={removeBgOnSelected}
+          removingBg={removingBg}
           onDelete={removeSelected}
         />
       </div>
