@@ -8,9 +8,28 @@ import {
   streamJob,
   type Design,
   type TraceResult,
+  type RewriteAction,
 } from '@ultrathing/api-client';
-import { Studio, exportPng, downloadBlob, isStudioDocument, traceToShapes } from '@ultrathing/studio';
+import {
+  Studio,
+  exportPng,
+  downloadBlob,
+  isStudioDocument,
+  traceToShapes,
+  getSelectedText,
+  setText,
+} from '@ultrathing/studio';
 import type { Editor, TLEditorSnapshot } from '@ultrathing/studio/sdk';
+
+/** Acciones rápidas de IA sobre el texto seleccionado (label visible → acción del motor). */
+const AI_ACTIONS: { action: RewriteAction; label: string }[] = [
+  { action: 'acortar', label: 'Acortar' },
+  { action: 'alargar', label: 'Alargar' },
+  { action: 'profesional', label: 'Pro' },
+  { action: 'persuasivo', label: 'Persuasivo' },
+  { action: 'corregir', label: 'Corregir' },
+  { action: 'traducir_en', label: 'EN' },
+];
 
 /**
  * Editor del Studio de Diseño. Monta el lienzo de `@ultrathing/studio` (tldraw tras el
@@ -27,6 +46,8 @@ export function DesignEditor() {
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [exporting, setExporting] = useState(false);
   const [tracing, setTracing] = useState<number | null>(null);
+  const [hasTextSel, setHasTextSel] = useState(false);
+  const [aiBusy, setAiBusy] = useState<RewriteAction | null>(null);
   const [error, setError] = useState<string | null>(null);
   const editorRef = useRef<Editor | null>(null);
   const traceInputRef = useRef<HTMLInputElement>(null);
@@ -66,6 +87,24 @@ export function DesignEditor() {
       setDesign({ ...design, title });
     } catch {
       setError('No se pudo guardar el título.');
+    }
+  }
+
+  // Aplica una acción de IA (acortar, traducir…) al texto seleccionado, vía copywriter.
+  async function applyAiAction(action: RewriteAction) {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const sel = getSelectedText(editor);
+    if (!sel) return;
+    setAiBusy(action);
+    setError(null);
+    try {
+      const { text } = await engineClient.copywriter.rewrite(sel.text, action);
+      setText(editor, sel.id, text);
+    } catch {
+      setError('No se pudo aplicar la acción de IA (¿motor y saldo/Vertex ok?).');
+    } finally {
+      setAiBusy(null);
     }
   }
 
@@ -180,12 +219,31 @@ export function DesignEditor() {
 
       {error && <p className="mb-2 text-sm text-[var(--danger)]">{error}</p>}
 
+      {hasTextSel && (
+        <div className="mb-2 flex items-center gap-1.5 rounded border border-line bg-elevated px-2 py-1.5">
+          <span className="mr-1 text-xs text-gold">✨ IA de texto:</span>
+          {AI_ACTIONS.map(({ action, label }) => (
+            <Button
+              key={action}
+              variant="ghost"
+              size="sm"
+              onClick={() => applyAiAction(action)}
+              disabled={aiBusy !== null}
+            >
+              {aiBusy === action ? '…' : label}
+            </Button>
+          ))}
+        </div>
+      )}
+
       <div className="min-h-0 flex-1 overflow-hidden rounded border border-line">
         <Studio
           snapshot={snapshot}
           onSave={handleSave}
           onReady={(editor) => {
             editorRef.current = editor;
+            // Mostrar la barra de IA solo cuando hay un texto seleccionado.
+            editor.store.listen(() => setHasTextSel(!!getSelectedText(editor)));
           }}
         />
       </div>

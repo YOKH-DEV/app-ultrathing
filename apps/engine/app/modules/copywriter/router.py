@@ -4,8 +4,8 @@ El router solo expone; toda la lógica vive en service.py.
 """
 from fastapi import APIRouter, HTTPException
 
-from .schemas import CopyResult, GenerateCopy
-from .service import generate
+from .schemas import CopyResult, GenerateCopy, RewriteCopy
+from .service import generate, rewrite
 
 router = APIRouter(prefix="/modules/copywriter", tags=["copywriter"])
 
@@ -14,5 +14,13 @@ router = APIRouter(prefix="/modules/copywriter", tags=["copywriter"])
 async def generate_copy(body: GenerateCopy) -> dict[str, str]:
     try:
         return await generate(body.brief, body.tone, body.format)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/rewrite", response_model=CopyResult)
+async def rewrite_copy(body: RewriteCopy) -> dict[str, str]:
+    try:
+        return await rewrite(body.text, body.action)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

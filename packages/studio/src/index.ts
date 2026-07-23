@@ -28,3 +28,4 @@ export {
   type UltraBoxShape,
   type UltraTextShape,
 } from './shapes';
+export { getSelectedText, setText } from './text-actions';

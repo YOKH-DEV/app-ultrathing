@@ -81,6 +81,14 @@ export interface TraceResult {
 /** Formato/tono que acepta el copywriter (deben coincidir con schemas.py del motor). */
 export type CopyTone = 'profesional' | 'cercano' | 'persuasivo' | 'divertido';
 export type CopyFormat = 'post' | 'anuncio' | 'email' | 'titulares';
+/** Acciones rápidas de IA sobre un texto ya existente (coincide con schemas.py). */
+export type RewriteAction =
+  | 'acortar'
+  | 'alargar'
+  | 'profesional'
+  | 'persuasivo'
+  | 'corregir'
+  | 'traducir_en';
 
 /** Opciones de descarga (deben coincidir con schemas.py del downloader). */
 export type DownloadFormat = 'mp4' | 'mp3';
@@ -126,6 +134,9 @@ export const engineClient = {
     // Petición corta: devuelve el copy directo, sin job system (ver router.py del motor).
     generate: (brief: string, tone: CopyTone, format: CopyFormat) =>
       post<{ text: string }>('/modules/copywriter/generate', { brief, tone, format }),
+    // Acción rápida de IA sobre un texto existente (acortar, tono, traducir…).
+    rewrite: (text: string, action: RewriteAction) =>
+      post<{ text: string }>('/modules/copywriter/rewrite', { text, action }),
   },
   ocr: {
     // Sube una imagen (pantallazo o foto) y devuelve el texto detectado.

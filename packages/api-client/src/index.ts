@@ -8,6 +8,7 @@ export type {
   DownloadHistoryItem,
   TraceResult,
   TracedElement,
+  RewriteAction,
 } from './engine';
 export { signIn, verifyOtp, signOut, useSession } from './auth';
 export { useLeads } from './leads';
