@@ -33,6 +33,14 @@ class Settings:
     zai_api_key: str = os.getenv("ZAI_API_KEY", "")
     zai_base_url: str = os.getenv("ZAI_BASE_URL", "https://api.z.ai/api/paas/v4")
     zai_model: str = os.getenv("ZAI_MODEL", "glm-4.6")
+    # Respaldo de IA vía Vertex (GLM-5 MaaS). Se usa cuando la API directa de z.ai
+    # falla (p. ej. 429 por saldo/paquete de recursos). Credenciales = ruta al JSON
+    # del service account (SECRETO: solo en .env.local vía GOOGLE_APPLICATION_CREDENTIALS,
+    # nunca al repo). Si la ruta está vacía, el respaldo queda desactivado.
+    vertex_credentials_path: str = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
+    vertex_project: str = os.getenv("VERTEX_PROJECT", "")
+    vertex_location: str = os.getenv("VERTEX_LOCATION", "global")
+    vertex_model: str = os.getenv("VERTEX_MODEL", "zai-org/glm-5-maas")
     # Modelos de faster-whisper por nivel de calidad (tiny/base/small/medium). Se descargan
     # solo la 1a vez. El usuario elige el nivel en la UI de voz:
     #   rápido = tiny (casi instantáneo, menos preciso)
