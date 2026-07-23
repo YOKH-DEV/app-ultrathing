@@ -18,6 +18,7 @@ import type {
 import { Canvas } from '../design/Canvas';
 import { Toolbar } from '../design/Toolbar';
 import { PropertiesPanel } from '../design/PropertiesPanel';
+import { BackgroundPanel } from '../design/BackgroundPanel';
 
 /** Crea un elemento de texto centrado en el lienzo. */
 function newTextElement(canvasW: number, canvasH: number, zIndex: number): DesignElement {
@@ -120,6 +121,7 @@ export function DesignEditor() {
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [removingBg, setRemovingBg] = useState(false);
+  const [background, setBackground] = useState<DesignBackground | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -127,6 +129,7 @@ export function DesignEditor() {
       setDesign(d);
       setTitle(d?.title ?? '');
       setElements(((d?.elements as unknown as DesignElement[]) ?? []).slice());
+      setBackground((d?.background as unknown as DesignBackground | null) ?? null);
       setLoading(false);
       if (!d) setError('No se pudo cargar el diseño (¿sin sesión o no existe?).');
     });
@@ -230,6 +233,11 @@ export function DesignEditor() {
     setDirty(true);
   }
 
+  function changeBackground(bg: DesignBackground) {
+    setBackground(bg);
+    setDirty(true);
+  }
+
   // Suprimir borra el elemento seleccionado (salvo si el foco está en un campo de texto).
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -249,7 +257,7 @@ export function DesignEditor() {
     setSaving(true);
     setError(null);
     try {
-      await updateDesign(id, { title, elements });
+      await updateDesign(id, { title, elements, background: background ?? undefined });
       setSavedAt(new Date().toLocaleTimeString());
       setDirty(false);
     } catch {
@@ -269,8 +277,6 @@ export function DesignEditor() {
         </Button>
       </div>
     );
-
-  const background = design.background as unknown as DesignBackground | null;
 
   return (
     <div>
@@ -309,17 +315,21 @@ export function DesignEditor() {
           />
         </div>
 
-        <PropertiesPanel
-          element={selected}
-          onChangeProps={updateSelectedProps}
-          onChangeShapeProps={updateSelectedShapeProps}
-          onChangeElement={(patch) => selectedId && updateElement(selectedId, patch)}
-          onBringToFront={bringToFront}
-          onSendToBack={sendToBack}
-          onRemoveBg={removeBgOnSelected}
-          removingBg={removingBg}
-          onDelete={removeSelected}
-        />
+        {selected ? (
+          <PropertiesPanel
+            element={selected}
+            onChangeProps={updateSelectedProps}
+            onChangeShapeProps={updateSelectedShapeProps}
+            onChangeElement={(patch) => selectedId && updateElement(selectedId, patch)}
+            onBringToFront={bringToFront}
+            onSendToBack={sendToBack}
+            onRemoveBg={removeBgOnSelected}
+            removingBg={removingBg}
+            onDelete={removeSelected}
+          />
+        ) : (
+          <BackgroundPanel background={background} onChange={changeBackground} />
+        )}
       </div>
 
       <p className="mt-2 text-center text-xs text-text-faint">
