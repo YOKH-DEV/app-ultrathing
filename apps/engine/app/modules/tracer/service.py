@@ -130,6 +130,61 @@ def _erase_text(bgr: np.ndarray, boxes: list[tuple[int, int, int, int]]) -> np.n
     return out
 
 
+def _hex_to_bgr(hexc: str) -> np.ndarray:
+    h = hexc.lstrip("#")
+    r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    return np.array([b, g, r], dtype=int)
+
+
+def _color_blocks(
+    clean: np.ndarray, palette: list[str], bg_hex: str | None
+) -> tuple[list[TracedElement], np.ndarray]:
+    """Detecta bloques SÓLIDOS de color (banners, botones) y los emite como rects
+    editables, borrándolos del fondo para que no se dupliquen. Conservador: solo
+    regiones grandes, casi rectangulares y de color uniforme (evita falsos positivos)."""
+    out = clean.copy()
+    h, w = clean.shape[:2]
+    area_img = h * w
+    bg = _hex_to_bgr(bg_hex) if bg_hex else None
+    blocks: list[TracedElement] = []
+
+    for hexc in palette:
+        c = _hex_to_bgr(hexc)
+        if bg is not None and np.linalg.norm(c - bg) < 32:
+            continue  # es el color de fondo, no un bloque
+        dist = np.linalg.norm(clean.astype(int) - c, axis=2)
+        mask = (dist < 42).astype(np.uint8) * 255
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((9, 9), np.uint8))
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        for cnt in contours:
+            area = cv2.contourArea(cnt)
+            if area < area_img * 0.02 or area > area_img * 0.7:
+                continue
+            x, y, bw, bh = cv2.boundingRect(cnt)
+            if bw < 8 or bh < 8 or area / (bw * bh) < 0.85:
+                continue  # debe llenar casi todo su bounding box (rectángulo sólido)
+            region = out[y : y + bh, x : x + bw].reshape(-1, 3)
+            fill = _hex(np.median(region, axis=0))
+            blocks.append(TracedElement(kind="rect", x=float(x), y=float(y), w=float(bw), h=float(bh), fill=fill))
+            # Borrar el bloque del fondo: rellenar con el color que lo rodea.
+            m = 12
+            rx0, ry0, rx1, ry1 = max(0, x - m), max(0, y - m), min(w, x + bw + m), min(h, y + bh + m)
+            ring = np.concatenate(
+                [
+                    out[ry0:y, rx0:rx1].reshape(-1, 3),
+                    out[y + bh : ry1, rx0:rx1].reshape(-1, 3),
+                    out[y : y + bh, rx0:x].reshape(-1, 3),
+                    out[y : y + bh, x + bw : rx1].reshape(-1, 3),
+                ]
+            )
+            out[y : y + bh, x : x + bw] = (
+                np.median(ring, axis=0) if len(ring) else (bg if bg is not None else fill)
+            )
+        if len(blocks) >= 6:  # tope: no saturar el lienzo
+            break
+    return blocks, out
+
+
 def _flat_background(bgr: np.ndarray) -> str | None:
     """Si las 4 esquinas son casi del mismo color, la imagen tiene fondo plano → hex."""
     h, w = bgr.shape[:2]
@@ -178,16 +233,17 @@ def _decompose(data: bytes, filename: str, on_progress: Callable[[float], None])
     on_progress(45)
 
     clean = _erase_text(bgr, boxes)
-    on_progress(70)
+    on_progress(65)
 
     background = _flat_background(clean)
     palette = _palette(clean)
+    block_elements, clean = _color_blocks(clean, palette, background)
     on_progress(90)
 
-    # Elemento de fondo (imagen reconstruida) al fondo del z-order, luego los textos.
+    # z-order: fondo reconstruido (atrás) → bloques de color → textos (adelante).
     bg_png = cv2.imencode(".png", clean)[1].tobytes()
     bg_element = TracedElement(kind="image", x=0, y=0, w=float(w), h=float(h), src=_png_dataurl(clean))
-    elements = [bg_element, *text_elements]
+    elements = [bg_element, *block_elements, *text_elements]
 
     result = TraceResult(
         width=w,
