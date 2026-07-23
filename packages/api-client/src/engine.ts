@@ -53,6 +53,31 @@ export function streamJob(id: string, onUpdate: (job: Job) => void): () => void 
   return () => es.close();
 }
 
+/** Un objeto editable extraído por el tracer (coincide con schemas.py del motor).
+ * Coordenadas en px de la imagen fuente; el studio las traduce a shapes del lienzo. */
+export interface TracedElement {
+  kind: 'text' | 'rect' | 'ellipse' | 'image';
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  text?: string | null;
+  font_size?: number | null;
+  color?: string | null;
+  fill?: string | null;
+  src?: string | null;
+}
+
+/** Resultado de descomponer una imagen en objetos editables. */
+export interface TraceResult {
+  width: number;
+  height: number;
+  background: string | null;
+  palette: string[];
+  elements: TracedElement[];
+  count: number;
+}
+
 /** Formato/tono que acepta el copywriter (deben coincidir con schemas.py del motor). */
 export type CopyTone = 'profesional' | 'cercano' | 'persuasivo' | 'divertido';
 export type CopyFormat = 'post' | 'anuncio' | 'email' | 'titulares';
@@ -108,6 +133,15 @@ export const engineClient = {
       const form = new FormData();
       form.append('file', image, 'imagen.png');
       return postForm<{ text: string }>('/modules/ocr/extract', form);
+    },
+  },
+  tracer: {
+    // Sube una imagen y la descompone en objetos editables (texto/fondo/paleta).
+    // Job + SSE (varios segundos); el `result` es un TraceResult.
+    decompose: (image: Blob) => {
+      const form = new FormData();
+      form.append('file', image, 'imagen.png');
+      return postForm<{ job_id: string }>('/modules/tracer/decompose', form);
     },
   },
   voz: {

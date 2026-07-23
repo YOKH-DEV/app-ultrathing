@@ -6,6 +6,8 @@ export type {
   DownloadFormat,
   DownloadQuality,
   DownloadHistoryItem,
+  TraceResult,
+  TracedElement,
 } from './engine';
 export { signIn, verifyOtp, signOut, useSession } from './auth';
 export { useLeads } from './leads';

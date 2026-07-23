@@ -16,3 +16,8 @@ export {
   exportPng,
   downloadBlob,
 } from './persistence';
+export {
+  traceToShapes,
+  type StudioTrace,
+  type StudioTraceElement,
+} from './tracing';

@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@ultrathing/ui';
-import { getDesign, updateDesign, type Design } from '@ultrathing/api-client';
-import { Studio, exportPng, downloadBlob, isStudioDocument } from '@ultrathing/studio';
+import {
+  getDesign,
+  updateDesign,
+  engineClient,
+  streamJob,
+  type Design,
+  type TraceResult,
+} from '@ultrathing/api-client';
+import { Studio, exportPng, downloadBlob, isStudioDocument, traceToShapes } from '@ultrathing/studio';
 import type { Editor, TLEditorSnapshot } from '@ultrathing/studio/sdk';
 
 /**
@@ -19,8 +26,10 @@ export function DesignEditor() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [exporting, setExporting] = useState(false);
+  const [tracing, setTracing] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const editorRef = useRef<Editor | null>(null);
+  const traceInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -58,6 +67,35 @@ export function DesignEditor() {
     } catch {
       setError('No se pudo guardar el título.');
     }
+  }
+
+  // Imagen → editable: descompone una imagen (motor) y la monta como shapes editables.
+  function handleTraceFile(file: File) {
+    const editor = editorRef.current;
+    if (!editor) return;
+    setTracing(0);
+    setError(null);
+    engineClient.tracer
+      .decompose(file)
+      .then(({ job_id }) => {
+        const stop = streamJob(job_id, (job) => {
+          setTracing(job.progress);
+          if (job.status === 'error') {
+            setError(job.error ?? 'No se pudo procesar la imagen.');
+            setTracing(null);
+            stop();
+          }
+          if (job.status === 'done') {
+            traceToShapes(editor, job.result as unknown as TraceResult);
+            setTracing(null);
+            stop();
+          }
+        });
+      })
+      .catch(() => {
+        setError('No se pudo conectar con el motor.');
+        setTracing(null);
+      });
   }
 
   async function handleExport() {
@@ -116,6 +154,25 @@ export function DesignEditor() {
         >
           {statusLabel}
         </span>
+        <input
+          ref={traceInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleTraceFile(f);
+            e.target.value = '';
+          }}
+        />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => traceInputRef.current?.click()}
+          disabled={tracing !== null}
+        >
+          {tracing !== null ? `Procesando… ${Math.round(tracing)}%` : '✨ Imagen → editable'}
+        </Button>
         <Button variant="ghost" size="sm" onClick={handleExport} disabled={exporting}>
           {exporting ? 'Exportando…' : 'Exportar PNG'}
         </Button>
