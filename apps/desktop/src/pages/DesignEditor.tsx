@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import type Konva from 'konva';
 import { Button } from '@ultrathing/ui';
 import {
   getDesign,
@@ -19,6 +20,7 @@ import { Canvas } from '../design/Canvas';
 import { Toolbar } from '../design/Toolbar';
 import { PropertiesPanel } from '../design/PropertiesPanel';
 import { BackgroundPanel } from '../design/BackgroundPanel';
+import { savePng, stageToPngDataUrl } from '../design/export';
 
 /** Crea un elemento de texto centrado en el lienzo. */
 function newTextElement(canvasW: number, canvasH: number, zIndex: number): DesignElement {
@@ -122,6 +124,8 @@ export function DesignEditor() {
   const [error, setError] = useState<string | null>(null);
   const [removingBg, setRemovingBg] = useState(false);
   const [background, setBackground] = useState<DesignBackground | null>(null);
+  const stageRef = useRef<Konva.Stage | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -238,6 +242,23 @@ export function DesignEditor() {
     setDirty(true);
   }
 
+  async function handleExport() {
+    const stage = stageRef.current;
+    if (!stage) return;
+    setExporting(true);
+    setError(null);
+    try {
+      const dataUrl = stageToPngDataUrl(stage);
+      const name = `${(title || 'diseno').replace(/[^\w.-]+/g, '_')}.png`;
+      const ok = await savePng(dataUrl, name);
+      if (ok) setSavedAt(new Date().toLocaleTimeString());
+    } catch {
+      setError('No se pudo exportar el PNG.');
+    } finally {
+      setExporting(false);
+    }
+  }
+
   // Suprimir borra el elemento seleccionado (salvo si el foco está en un campo de texto).
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -295,6 +316,9 @@ export function DesignEditor() {
         <Button size="sm" onClick={handleSave} disabled={saving || !dirty}>
           {saving ? 'Guardando…' : dirty ? 'Guardar' : 'Guardado'}
         </Button>
+        <Button variant="ghost" size="sm" onClick={handleExport} disabled={exporting}>
+          {exporting ? 'Exportando…' : 'Exportar PNG'}
+        </Button>
         {savedAt && !dirty && <span className="text-xs text-text-faint">Guardado {savedAt}</span>}
       </div>
 
@@ -312,6 +336,7 @@ export function DesignEditor() {
             selectedId={selectedId}
             onSelect={setSelectedId}
             onChange={updateElement}
+            stageRef={stageRef}
           />
         </div>
 
