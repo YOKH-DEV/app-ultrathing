@@ -1,12 +1,18 @@
+import { lazy, Suspense } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { featuresFor } from '@ultrathing/core';
 import { useSession, type Session } from '@ultrathing/api-client';
 import { LoginScreen } from './auth/LoginScreen';
 import { Layout } from './shell/Layout';
 import { ComingSoon } from './pages/ComingSoon';
-import { DesignEditor } from './pages/DesignEditor';
 import { pageByRoute } from './pages';
 import './features';
+
+// El editor del studio arrastra tldraw (~1.6MB): se carga sólo al abrir un diseño,
+// así el arranque de la app no paga ese peso.
+const DesignEditor = lazy(() =>
+  import('./pages/DesignEditor').then((m) => ({ default: m.DesignEditor })),
+);
 
 // Bypass temporal de auth mientras se construyen los módulos — reactivar antes de shipear.
 const SKIP_AUTH_DURING_DEV = true;
@@ -43,7 +49,14 @@ function Shell({ session }: { session: Session | null }) {
               />
             );
           })}
-          <Route path="/diseno/:id" element={<DesignEditor />} />
+          <Route
+            path="/diseno/:id"
+            element={
+              <Suspense fallback={<p className="text-sm text-text-muted">Abriendo el studio…</p>}>
+                <DesignEditor />
+              </Suspense>
+            }
+          />
           <Route path="*" element={<Navigate to={home} replace />} />
         </Route>
       </Routes>
