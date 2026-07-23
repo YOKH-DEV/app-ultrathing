@@ -6,6 +6,7 @@ import {
   composeUiOverrides,
   type StudioPlugin,
 } from './plugins';
+import { ultraShapesPlugin } from './shapes';
 
 export interface StudioProps {
   /** Documento a cargar (snapshot de tldraw). Si falta, arranca en lienzo vacío. */
@@ -40,9 +41,11 @@ export function Studio({
 }: StudioProps) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const shapeUtils = collectShapeUtils(plugins);
-  const tools = collectTools(plugins);
-  const overrides = composeUiOverrides(plugins);
+  // Los custom shapes de color exacto van siempre; encima, los plugins del consumidor.
+  const allPlugins = [ultraShapesPlugin, ...plugins];
+  const shapeUtils = collectShapeUtils(allPlugins);
+  const tools = collectTools(allPlugins);
+  const overrides = composeUiOverrides(allPlugins);
 
   const handleMount = useCallback(
     (editor: Editor) => {

@@ -21,3 +21,10 @@ export {
   type StudioTrace,
   type StudioTraceElement,
 } from './tracing';
+export {
+  ultraShapesPlugin,
+  UltraBoxUtil,
+  UltraTextUtil,
+  type UltraBoxShape,
+  type UltraTextShape,
+} from './shapes';

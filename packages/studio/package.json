@@ -10,6 +10,7 @@
     "./styles.css": "./src/styles.css"
   },
   "dependencies": {
+    "@tldraw/tlschema": "5.2.5",
     "@ultrathing/ui": "workspace:*",
     "tldraw": "^5.2.5"
   },

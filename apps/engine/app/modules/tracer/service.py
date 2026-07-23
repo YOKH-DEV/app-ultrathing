@@ -93,17 +93,41 @@ def _ocr_elements(rgb: np.ndarray, bgr: np.ndarray) -> tuple[list[TracedElement]
     return elements, boxes
 
 
-def _inpaint_background(bgr: np.ndarray, boxes: list[tuple[int, int, int, int]]) -> np.ndarray:
-    """Borra los textos y reconstruye el fondo debajo (INPAINT_TELEA)."""
+def _erase_text(bgr: np.ndarray, boxes: list[tuple[int, int, int, int]]) -> np.ndarray:
+    """Borra los textos rellenando cada caja con el color del fondo que la rodea.
+
+    En piezas de diseño (fondo plano por zonas) esto no deja "texto fantasma", a
+    diferencia del inpaint que promedia y deja un manchón. Si el borde alrededor es
+    muy heterogéneo (foto/textura), cae a inpaint para esa caja."""
     if not boxes:
         return bgr
-    mask = np.zeros(bgr.shape[:2], dtype=np.uint8)
+    out = bgr.copy()
+    h, w = bgr.shape[:2]
+    inpaint_mask = np.zeros((h, w), dtype=np.uint8)
+    need_inpaint = False
+
     for x0, y0, x1, y1 in boxes:
-        # Margen proporcional a la altura del texto: cubre bien remates y antialias, así
-        # no queda "texto fantasma" del original bajo el texto editable nuevo.
-        pad = max(4, int((y1 - y0) * 0.25))
-        cv2.rectangle(mask, (x0 - pad, y0 - pad), (x1 + pad, y1 + pad), 255, -1)
-    return cv2.inpaint(bgr, mask, 5, cv2.INPAINT_TELEA)
+        pad = max(3, int((y1 - y0) * 0.28))
+        fx0, fy0, fx1, fy1 = max(0, x0 - pad), max(0, y0 - pad), min(w, x1 + pad), min(h, y1 + pad)
+        m = max(5, int((y1 - y0) * 0.5))
+        rx0, ry0, rx1, ry1 = max(0, fx0 - m), max(0, fy0 - m), min(w, fx1 + m), min(h, fy1 + m)
+        ring = np.concatenate(
+            [
+                out[ry0:fy0, rx0:rx1].reshape(-1, 3),
+                out[fy1:ry1, rx0:rx1].reshape(-1, 3),
+                out[fy0:fy1, rx0:fx0].reshape(-1, 3),
+                out[fy0:fy1, fx1:rx1].reshape(-1, 3),
+            ]
+        )
+        if len(ring) and ring.std(axis=0).mean() < 22:  # borde uniforme → relleno plano
+            out[fy0:fy1, fx0:fx1] = np.median(ring, axis=0)
+        else:  # borde con textura → marcar para inpaint
+            inpaint_mask[fy0:fy1, fx0:fx1] = 255
+            need_inpaint = True
+
+    if need_inpaint:
+        out = cv2.inpaint(out, inpaint_mask, 5, cv2.INPAINT_TELEA)
+    return out
 
 
 def _flat_background(bgr: np.ndarray) -> str | None:
@@ -153,7 +177,7 @@ def _decompose(data: bytes, filename: str, on_progress: Callable[[float], None])
     text_elements, boxes = _ocr_elements(rgb, bgr)
     on_progress(45)
 
-    clean = _inpaint_background(bgr, boxes)
+    clean = _erase_text(bgr, boxes)
     on_progress(70)
 
     background = _flat_background(clean)
