@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { Stage, Layer, Rect, Ellipse, Line, Text, Transformer } from 'react-konva';
+import { useEffect, useRef, useState } from 'react';
+import { Stage, Layer, Rect, Ellipse, Line, Text, Transformer, Image as KonvaImage } from 'react-konva';
 import type Konva from 'konva';
 import type {
   DesignElement,
@@ -17,6 +17,22 @@ interface CanvasProps {
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   onChange: (id: string, patch: Partial<DesignElement>) => void;
+  stageRef?: React.RefObject<Konva.Stage | null>;
+}
+
+/** Imagen de fondo del lienzo: cubre todo el área (x0,y0,width,height), no seleccionable. */
+function BackgroundImage({ src, width, height }: { src: string; width: number; height: number }) {
+  const [img, setImg] = useState<HTMLImageElement | null>(null);
+  useEffect(() => {
+    const image = new window.Image();
+    image.src = src;
+    image.onload = () => setImg(image);
+    return () => {
+      image.onload = null;
+    };
+  }, [src]);
+  if (!img) return null;
+  return <KonvaImage image={img} x={0} y={0} width={width} height={height} listening={false} />;
 }
 
 /** Área máxima donde cabe el lienzo; se escala para entrar sin deformar. */
@@ -36,6 +52,7 @@ export function Canvas({
   selectedId,
   onSelect,
   onChange,
+  stageRef,
 }: CanvasProps) {
   const scale = Math.min(MAX_W / width, MAX_H / height, 1);
   const trRef = useRef<Konva.Transformer>(null);
@@ -62,6 +79,7 @@ export function Canvas({
 
   return (
     <Stage
+      ref={stageRef}
       width={width * scale}
       height={height * scale}
       scaleX={scale}
@@ -74,6 +92,10 @@ export function Canvas({
     >
       <Layer>
         <Rect x={0} y={0} width={width} height={height} fill={bgFill} listening={false} />
+
+        {background?.type === 'image' && background.value && (
+          <BackgroundImage src={background.value} width={width} height={height} />
+        )}
 
         {sorted.map((el) => {
           const attach = (n: Konva.Node | null) => {
