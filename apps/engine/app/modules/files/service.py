@@ -14,16 +14,36 @@ from app.core.supabase import insert_asset
 from .schemas import PdfToCsvResult
 
 
+# Estrategia por texto: agrupa por alineación de palabras cuando la tabla no tiene
+# rayas. Es el respaldo para tablas sin bordes (que la detección por líneas no ve).
+_TEXT_TABLE_SETTINGS = {"vertical_strategy": "text", "horizontal_strategy": "text"}
+
+
+def _page_tables(page: Any) -> list[list[list[Any]]]:
+    """Detecta tablas priorizando las líneas de borde (lo más preciso). Si la página
+    no expone rayas que delimiten la tabla, reintenta con la estrategia por texto,
+    así también captura tablas sin bordes en vez de darlas por inexistentes."""
+    tables = page.extract_tables()
+    if not tables:
+        tables = page.extract_tables(_TEXT_TABLE_SETTINGS)
+    return tables
+
+
 def _pdf_to_csv(data: bytes, filename: str, on_progress: Callable[[float], None]) -> PdfToCsvResult:
     rows: list[list[Any]] = []
     tables = 0
     with pdfplumber.open(io.BytesIO(data)) as pdf:
         total = len(pdf.pages) or 1
         for i, page in enumerate(pdf.pages):
-            for table in page.extract_tables():
+            for table in _page_tables(page):
                 tables += 1
                 rows.extend(table)
             on_progress(round((i + 1) / total * 90, 1))
+
+    # La estrategia por texto suele intercalar filas vacías (los huecos verticales de
+    # la tabla): se descartan para no ensuciar el CSV. Una fila es vacía si todas sus
+    # celdas son None o quedan en blanco al recortar.
+    rows = [r for r in rows if any((c or "").strip() for c in r)]
 
     if not rows:
         raise ValueError("El PDF no contiene tablas detectables.")
