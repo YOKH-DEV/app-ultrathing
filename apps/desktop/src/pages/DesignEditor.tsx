@@ -46,6 +46,8 @@ export function DesignEditor() {
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [exporting, setExporting] = useState(false);
   const [tracing, setTracing] = useState<number | null>(null);
+  const [genBrief, setGenBrief] = useState('');
+  const [generating, setGenerating] = useState(false);
   const [hasTextSel, setHasTextSel] = useState(false);
   const [aiBusy, setAiBusy] = useState<RewriteAction | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -87,6 +89,22 @@ export function DesignEditor() {
       setDesign({ ...design, title });
     } catch {
       setError('No se pudo guardar el título.');
+    }
+  }
+
+  // Genera una pieza entera desde un brief: la IA emite los elementos y se montan.
+  async function handleGenerate() {
+    const editor = editorRef.current;
+    if (!editor || !genBrief.trim() || !design) return;
+    setGenerating(true);
+    setError(null);
+    try {
+      const result = await engineClient.design.generate(genBrief, design.width, design.height);
+      traceToShapes(editor, result as unknown as TraceResult);
+    } catch {
+      setError('No se pudo generar la pieza con IA (¿motor y Vertex ok?).');
+    } finally {
+      setGenerating(false);
     }
   }
 
@@ -214,6 +232,20 @@ export function DesignEditor() {
         </Button>
         <Button variant="ghost" size="sm" onClick={handleExport} disabled={exporting}>
           {exporting ? 'Exportando…' : 'Exportar PNG'}
+        </Button>
+      </div>
+
+      <div className="mb-2 flex items-center gap-2">
+        <span className="text-xs text-gold">✨ Generar pieza:</span>
+        <input
+          value={genBrief}
+          onChange={(e) => setGenBrief(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
+          placeholder="Describe la pieza (ej: promo 50% OFF de una cafetería)…"
+          className="flex-1 rounded border border-line bg-elevated px-3 py-1 text-sm text-text outline-none focus:border-gold"
+        />
+        <Button size="sm" onClick={handleGenerate} disabled={generating || !genBrief.trim()}>
+          {generating ? 'Generando…' : 'Generar con IA'}
         </Button>
       </div>
 

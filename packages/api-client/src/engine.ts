@@ -155,6 +155,12 @@ export const engineClient = {
       return postForm<{ job_id: string }>('/modules/tracer/decompose', form);
     },
   },
+  design: {
+    // Genera una pieza gráfica editable desde un brief (la IA emite los elementos).
+    // Devuelve un TraceResult (mismo formato que el tracer) para montar en el lienzo.
+    generate: (brief: string, width: number, height: number) =>
+      post<TraceResult>('/modules/design/generate', { brief, width, height }),
+  },
   voz: {
     // Sube audio WAV (Web Audio). `cleanup=false` salta el pulido IA (trozos en vivo).
     // `language` fuerza el idioma; `tier` (rapido/equilibrado/preciso) elige el modelo.
