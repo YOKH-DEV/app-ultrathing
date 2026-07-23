@@ -41,6 +41,8 @@ class Settings:
     vertex_project: str = os.getenv("VERTEX_PROJECT", "")
     vertex_location: str = os.getenv("VERTEX_LOCATION", "global")
     vertex_model: str = os.getenv("VERTEX_MODEL", "zai-org/glm-5-maas")
+    # Modelo de generación de imágenes en Vertex (Gemini "nano-banana", región global).
+    vertex_image_model: str = os.getenv("VERTEX_IMAGE_MODEL", "gemini-2.5-flash-image")
     # Modelos de faster-whisper por nivel de calidad (tiny/base/small/medium). Se descargan
     # solo la 1a vez. El usuario elige el nivel en la UI de voz:
     #   rápido = tiny (casi instantáneo, menos preciso)

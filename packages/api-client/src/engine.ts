@@ -161,6 +161,11 @@ export const engineClient = {
     generate: (brief: string, width: number, height: number) =>
       post<TraceResult>('/modules/design/generate', { brief, width, height }),
   },
+  imagegen: {
+    // Genera una imagen desde un prompt (Gemini en Vertex). Devuelve dataURL PNG.
+    generate: (prompt: string) =>
+      post<{ image: string }>('/modules/imagegen/generate', { prompt }),
+  },
   voz: {
     // Sube audio WAV (Web Audio). `cleanup=false` salta el pulido IA (trozos en vivo).
     // `language` fuerza el idioma; `tier` (rapido/equilibrado/preciso) elige el modelo.

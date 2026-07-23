@@ -18,6 +18,7 @@ import {
   traceToShapes,
   getSelectedText,
   setText,
+  addImage,
 } from '@ultrathing/studio';
 import type { Editor, TLEditorSnapshot } from '@ultrathing/studio/sdk';
 
@@ -48,6 +49,7 @@ export function DesignEditor() {
   const [tracing, setTracing] = useState<number | null>(null);
   const [genBrief, setGenBrief] = useState('');
   const [generating, setGenerating] = useState(false);
+  const [genImg, setGenImg] = useState(false);
   const [hasTextSel, setHasTextSel] = useState(false);
   const [aiBusy, setAiBusy] = useState<RewriteAction | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -105,6 +107,22 @@ export function DesignEditor() {
       setError('No se pudo generar la pieza con IA (¿motor y Vertex ok?).');
     } finally {
       setGenerating(false);
+    }
+  }
+
+  // Genera una imagen con IA desde el brief y la inserta en el lienzo.
+  async function handleGenImage() {
+    const editor = editorRef.current;
+    if (!editor || !genBrief.trim()) return;
+    setGenImg(true);
+    setError(null);
+    try {
+      const { image } = await engineClient.imagegen.generate(genBrief);
+      await addImage(editor, image);
+    } catch {
+      setError('No se pudo generar la imagen con IA (¿motor y Vertex ok?).');
+    } finally {
+      setGenImg(false);
     }
   }
 
@@ -244,8 +262,16 @@ export function DesignEditor() {
           placeholder="Describe la pieza (ej: promo 50% OFF de una cafetería)…"
           className="flex-1 rounded border border-line bg-elevated px-3 py-1 text-sm text-text outline-none focus:border-gold"
         />
-        <Button size="sm" onClick={handleGenerate} disabled={generating || !genBrief.trim()}>
-          {generating ? 'Generando…' : 'Generar con IA'}
+        <Button size="sm" onClick={handleGenerate} disabled={generating || genImg || !genBrief.trim()}>
+          {generating ? 'Generando…' : 'Generar pieza'}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleGenImage}
+          disabled={genImg || generating || !genBrief.trim()}
+        >
+          {genImg ? 'Imagen…' : '🖼️ Imagen'}
         </Button>
       </div>
 
