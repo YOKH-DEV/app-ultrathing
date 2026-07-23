@@ -55,3 +55,6 @@ Thumbs.db
 # Credenciales Vertex (service account) — NUNCA al repo
 apps/engine/vertex-sa.json
 *vertex-sa.json
+
+# Salidas de render de video
+apps/video/out/

@@ -19,6 +19,7 @@ import {
   getSelectedText,
   setText,
   addImage,
+  canvasToTrace,
 } from '@ultrathing/studio';
 import type { Editor, TLEditorSnapshot } from '@ultrathing/studio/sdk';
 
@@ -50,6 +51,7 @@ export function DesignEditor() {
   const [genBrief, setGenBrief] = useState('');
   const [generating, setGenerating] = useState(false);
   const [genImg, setGenImg] = useState(false);
+  const [video, setVideo] = useState<number | null>(null);
   const [hasTextSel, setHasTextSel] = useState(false);
   const [aiBusy, setAiBusy] = useState<RewriteAction | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -173,6 +175,39 @@ export function DesignEditor() {
       });
   }
 
+  // Renderiza lo que hay en el lienzo como mp4 animado (Remotion, en el motor).
+  function handleVideo() {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const trace = canvasToTrace(editor);
+    if (!trace.elements.length) {
+      setError('El lienzo está vacío: agrega algo antes de renderizar el video.');
+      return;
+    }
+    setVideo(0);
+    setError(null);
+    engineClient.video
+      .render(trace.elements, '#111111', trace.width, trace.height)
+      .then(({ job_id }) => {
+        const stop = streamJob(job_id, (job) => {
+          setVideo(job.progress);
+          if (job.status === 'error') {
+            setError(job.error ?? 'No se pudo renderizar el video.');
+            setVideo(null);
+            stop();
+          }
+          if (job.status === 'done') {
+            setVideo(null);
+            stop();
+          }
+        });
+      })
+      .catch(() => {
+        setError('No se pudo conectar con el motor.');
+        setVideo(null);
+      });
+  }
+
   async function handleExport() {
     const editor = editorRef.current;
     if (!editor) return;
@@ -247,6 +282,9 @@ export function DesignEditor() {
           disabled={tracing !== null}
         >
           {tracing !== null ? `Procesando… ${Math.round(tracing)}%` : '✨ Imagen → editable'}
+        </Button>
+        <Button variant="ghost" size="sm" onClick={handleVideo} disabled={video !== null}>
+          {video !== null ? `Video… ${Math.round(video)}%` : '🎬 Video'}
         </Button>
         <Button variant="ghost" size="sm" onClick={handleExport} disabled={exporting}>
           {exporting ? 'Exportando…' : 'Exportar PNG'}

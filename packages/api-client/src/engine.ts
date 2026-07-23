@@ -161,6 +161,11 @@ export const engineClient = {
     generate: (brief: string, width: number, height: number) =>
       post<TraceResult>('/modules/design/generate', { brief, width, height }),
   },
+  video: {
+    // Renderiza los elementos del lienzo como mp4 (Remotion). Job + SSE.
+    render: (elements: TracedElement[], background: string, width: number, height: number) =>
+      post<{ job_id: string }>('/modules/video/render', { elements, background, width, height }),
+  },
   imagegen: {
     // Genera una imagen desde un prompt (Gemini en Vertex). Devuelve dataURL PNG.
     generate: (prompt: string) =>

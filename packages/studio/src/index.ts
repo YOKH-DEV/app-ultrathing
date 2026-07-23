@@ -30,3 +30,4 @@ export {
 } from './shapes';
 export { getSelectedText, setText } from './text-actions';
 export { addImage } from './images';
+export { canvasToTrace } from './canvas-export';
