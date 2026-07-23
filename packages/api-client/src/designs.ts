@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { Tables, DesignBackground, DesignElement, Json } from '@ultrathing/core';
+import type { Tables, DesignBackground, Json } from '@ultrathing/core';
 import { supabase } from './supabase';
 
 export type Design = Tables<'designs'>;
@@ -79,7 +79,9 @@ export async function updateDesign(
   patch: {
     title?: string;
     background?: DesignBackground;
-    elements?: DesignElement[];
+    /** Documento del diseño. Con el studio (tldraw) es el snapshot completo (objeto);
+     * por eso el tipo es `Json` y no `DesignElement[]` como en el editor konva viejo. */
+    elements?: Json;
     thumbnail?: string | null;
   },
 ): Promise<void> {
@@ -87,12 +89,11 @@ export async function updateDesign(
     .from('designs')
     .update({
       title: patch.title,
-      // DesignBackground/DesignElement son interfaces "cerradas" que no satisfacen
-      // Json estructuralmente (sin index signature); el cast se acota a estos dos
-      // campos para que el resto del payload (nombres de campo, tipos) siga
-      // type-checked por el Update generado de Supabase.
+      // DesignBackground es una interfaz "cerrada" que no satisface Json
+      // estructuralmente (sin index signature); el cast se acota a ese campo para que
+      // el resto del payload siga type-checked por el Update generado de Supabase.
       background: patch.background as unknown as Json | undefined,
-      elements: patch.elements as unknown as Json | undefined,
+      elements: patch.elements,
       thumbnail: patch.thumbnail,
       updated_at: new Date().toISOString(),
     })
