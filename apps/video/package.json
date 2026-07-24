@@ -7,6 +7,7 @@
     "render": "remotion render src/index.ts Design out/video.mp4"
   },
   "dependencies": {
+    "@ultrathing/studio": "workspace:*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "remotion": "^4.0.0",

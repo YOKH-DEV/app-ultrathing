@@ -20,8 +20,10 @@ import {
   setText,
   addImage,
   canvasToTrace,
+  VideoPreview,
 } from '@ultrathing/studio';
 import type { Editor, TLEditorSnapshot } from '@ultrathing/studio/sdk';
+import type { StudioTrace } from '@ultrathing/studio';
 
 /** Acciones rápidas de IA sobre el texto seleccionado (label visible → acción del motor). */
 const AI_ACTIONS: { action: RewriteAction; label: string }[] = [
@@ -52,6 +54,7 @@ export function DesignEditor() {
   const [generating, setGenerating] = useState(false);
   const [genImg, setGenImg] = useState(false);
   const [video, setVideo] = useState<number | null>(null);
+  const [preview, setPreview] = useState<StudioTrace | null>(null);
   const [hasTextSel, setHasTextSel] = useState(false);
   const [aiBusy, setAiBusy] = useState<RewriteAction | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -175,6 +178,19 @@ export function DesignEditor() {
       });
   }
 
+  // Abre el preview animado del lienzo (misma composición que el render, sin esperar).
+  function openPreview() {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const trace = canvasToTrace(editor);
+    if (!trace.elements.length) {
+      setError('El lienzo está vacío: agrega algo antes de previsualizar.');
+      return;
+    }
+    setError(null);
+    setPreview(trace);
+  }
+
   // Renderiza lo que hay en el lienzo como mp4 animado (Remotion, en el motor).
   function handleVideo() {
     const editor = editorRef.current;
@@ -283,6 +299,9 @@ export function DesignEditor() {
         >
           {tracing !== null ? `Procesando… ${Math.round(tracing)}%` : '✨ Imagen → editable'}
         </Button>
+        <Button variant="ghost" size="sm" onClick={openPreview}>
+          ▶ Preview
+        </Button>
         <Button variant="ghost" size="sm" onClick={handleVideo} disabled={video !== null}>
           {video !== null ? `Video… ${Math.round(video)}%` : '🎬 Video'}
         </Button>
@@ -329,6 +348,34 @@ export function DesignEditor() {
               {aiBusy === action ? '…' : label}
             </Button>
           ))}
+        </div>
+      )}
+
+      {preview && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-8"
+          onClick={() => setPreview(null)}
+          role="presentation"
+        >
+          <div
+            className="flex max-h-full flex-col gap-2"
+            onClick={(e) => e.stopPropagation()}
+            role="presentation"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gold">▶ Preview del video</span>
+              <Button variant="ghost" size="sm" onClick={() => setPreview(null)}>
+                Cerrar ✕
+              </Button>
+            </div>
+            <div className="h-[70vh] w-[70vw] overflow-hidden rounded border border-line bg-base">
+              <VideoPreview
+                elements={preview.elements}
+                width={preview.width}
+                height={preview.height}
+              />
+            </div>
+          </div>
         </div>
       )}
 

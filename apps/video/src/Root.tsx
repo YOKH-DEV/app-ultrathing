@@ -1,12 +1,16 @@
 import { Composition } from 'remotion';
-import { DesignVideo, type DesignVideoProps } from './DesignVideo';
+import {
+  DesignVideo,
+  VIDEO_FPS,
+  videoDurationInFrames,
+  type DesignVideoProps,
+} from '@ultrathing/studio/video';
 
-const FPS = 30;
+const FPS = VIDEO_FPS;
 
 /** Duración: base + un tramo por elemento, para que todos alcancen a entrar. */
 function durationFor(props: DesignVideoProps): number {
-  const tail = 2 * FPS; // 2s de aire al final
-  return Math.max(3 * FPS, props.elements.length * props.stagger + tail);
+  return videoDurationInFrames(props.elements.length, props.stagger, FPS);
 }
 
 export const RemotionRoot: React.FC = () => (

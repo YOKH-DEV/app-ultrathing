@@ -7,11 +7,14 @@
   "exports": {
     ".": "./src/index.ts",
     "./sdk": "./src/sdk.ts",
+    "./video": "./src/video.tsx",
     "./styles.css": "./src/styles.css"
   },
   "dependencies": {
+    "@remotion/player": "^4.0.498",
     "@tldraw/tlschema": "5.2.5",
     "@ultrathing/ui": "workspace:*",
+    "remotion": "^4.0.0",
     "tldraw": "^5.2.5"
   },
   "peerDependencies": {

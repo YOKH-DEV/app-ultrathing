@@ -88,3 +88,11 @@ export const DesignVideo: React.FC<DesignVideoProps> = ({ elements, background, 
     </AbsoluteFill>
   );
 };
+
+/** FPS único para preview y render, así ambos muestran exactamente lo mismo. */
+export const VIDEO_FPS = 30;
+
+/** Duración: base + un tramo por elemento + aire final. La comparten Player y CLI. */
+export function videoDurationInFrames(count: number, stagger: number, fps = VIDEO_FPS): number {
+  return Math.max(3 * fps, count * stagger + 2 * fps);
+}
