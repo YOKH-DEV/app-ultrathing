@@ -3,13 +3,16 @@
  * motor (`DesignVideo`) con los mismos props y duración, así lo que ves acá es
  * exactamente lo que va a salir en el mp4 — sin esperar el render.
  */
-import { Player } from '@remotion/player';
+import { Player, type PlayerRef } from '@remotion/player';
+import type { Ref } from 'react';
 import {
   DesignVideo,
   VIDEO_FPS,
   videoDurationInFrames,
   type VideoElement,
 } from './video';
+
+export type { PlayerRef };
 
 export interface VideoPreviewProps {
   elements: VideoElement[];
@@ -18,6 +21,8 @@ export interface VideoPreviewProps {
   height: number;
   /** Frames entre la entrada de un elemento y el siguiente (igual que en el render). */
   stagger?: number;
+  /** Ref al reproductor: permite play/pause/seek desde la app dueña. */
+  playerRef?: Ref<PlayerRef>;
 }
 
 export function VideoPreview({
@@ -26,10 +31,12 @@ export function VideoPreview({
   width,
   height,
   stagger = 10,
+  playerRef,
 }: VideoPreviewProps) {
   const durationInFrames = videoDurationInFrames(elements.length, stagger);
   return (
     <Player
+      ref={playerRef}
       component={DesignVideo}
       inputProps={{ elements, background, stagger, width, height }}
       durationInFrames={durationInFrames}

@@ -34,7 +34,9 @@ export const DesignVideo: React.FC<DesignVideoProps> = ({ elements, background, 
     <AbsoluteFill style={{ backgroundColor: background }}>
       {elements.map((el, i) => {
         const start = i * stagger;
-        const local = frame - start;
+        // Nunca pasamos frames negativos a spring(): antes de que le toque entrar, el
+        // elemento se queda en su estado inicial (invisible) en vez de producir NaN.
+        const local = Math.max(0, frame - start);
         const appear = spring({ frame: local, fps, config: { damping: 200 }, durationInFrames: 20 });
         const opacity = interpolate(local, [0, 12], [0, 1], {
           extrapolateLeft: 'clamp',

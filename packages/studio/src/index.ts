@@ -31,5 +31,5 @@ export {
 export { getSelectedText, setText } from './text-actions';
 export { addImage } from './images';
 export { canvasToTrace } from './canvas-export';
-export { VideoPreview, type VideoPreviewProps } from './VideoPreview';
+export { VideoPreview, type VideoPreviewProps, type PlayerRef } from './VideoPreview';
 export { DesignVideo, VIDEO_FPS, videoDurationInFrames, type VideoElement } from './video';
