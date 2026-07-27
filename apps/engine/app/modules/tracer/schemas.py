@@ -25,8 +25,18 @@ class TracedElement(BaseModel):
     color: str | None = None  # hex "#rrggbb"
     # Forma
     fill: str | None = None  # hex o "none"
-    # Imagen (fondo reconstruido)
+    # Imagen (fondo = imagen ORIGINAL intacta, o parche local)
     src: str | None = None  # dataURL "data:image/png;base64,..."
+    # --- Enfoque no destructivo (overlay) ---
+    # Un texto del tracer es un OVERLAY: no se pinta hasta que el usuario lo edita,
+    # así el diseño se ve idéntico al original (con su tipografía real). Al editar,
+    # se tapa la zona con `patch` (recorte del fondo local ya sin el texto) y se
+    # muestra el texto nuevo con `font_family`/`font_weight` aproximados.
+    overlay: bool = False  # True → invisible hasta editar (solo textos del tracer)
+    bg_color: str | None = None  # color de fondo local (parche plano de respaldo)
+    patch: str | None = None  # dataURL del recorte de fondo local con el texto borrado
+    font_family: str | None = None  # hint de familia ("serif"/"sans-serif") si se detecta
+    font_weight: int | None = None  # peso aproximado (400/700) por densidad de trazo
 
 
 class TraceResult(BaseModel):

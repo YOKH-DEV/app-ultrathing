@@ -35,6 +35,13 @@ interface UltraTextProps {
   color: string;
   fontSize: number;
   align: 'left' | 'center' | 'right';
+  // --- Overlay no destructivo (imagen → editable) ---
+  overlay: boolean; // true → invisible hasta editar, para dejar ver el original debajo
+  bgColor: string; // color de fondo local (parche plano de respaldo); '' si no aplica
+  patch: string; // dataURL del recorte de fondo local que tapa el texto original; '' si no
+  fontFamily: string; // familia detectada ('serif'/'sans-serif' o concreta); '' → default
+  fontWeight: number; // peso aproximado (400/700)
+  edited: boolean; // el overlay ya fue materializado (el usuario lo editó)
 }
 
 declare module '@tldraw/tlschema' {
@@ -105,10 +112,29 @@ export class UltraTextUtil extends ShapeUtil<UltraTextShape> {
     color: T.string,
     fontSize: T.number,
     align: T.literalEnum('left', 'center', 'right'),
+    overlay: T.boolean,
+    bgColor: T.string,
+    patch: T.string,
+    fontFamily: T.string,
+    fontWeight: T.number,
+    edited: T.boolean,
   };
 
   getDefaultProps(): UltraTextShape['props'] {
-    return { w: 220, h: 44, text: 'Texto', color: '#111111', fontSize: 24, align: 'left' };
+    return {
+      w: 220,
+      h: 44,
+      text: 'Texto',
+      color: '#111111',
+      fontSize: 24,
+      align: 'left',
+      overlay: false,
+      bgColor: '',
+      patch: '',
+      fontFamily: '',
+      fontWeight: 700,
+      edited: false,
+    };
   }
 
   getGeometry(shape: UltraTextShape): Geometry2d {
@@ -126,7 +152,24 @@ export class UltraTextUtil extends ShapeUtil<UltraTextShape> {
   component(shape: UltraTextShape) {
     const editor = useEditor();
     const isEditing = editor.getEditingShapeId() === shape.id;
-    const { w, h, text, color, fontSize, align } = shape.props;
+    const { w, h, text, color, fontSize, align, overlay, bgColor, patch, fontFamily, fontWeight, edited } =
+      shape.props;
+
+    // Un overlay del tracer se "materializa" (pinta) solo cuando el usuario lo edita.
+    // Hasta entonces se ve el pixel original debajo (tipografía real incluida).
+    const materialized = !overlay || edited || isEditing;
+
+    const family =
+      fontFamily && fontFamily.length
+        ? fontFamily === 'serif'
+          ? 'Georgia, "Times New Roman", serif'
+          : fontFamily === 'sans-serif'
+            ? 'Inter, system-ui, sans-serif'
+            : // Familia concreta detectada por IA (Google Font): con fallback genérico
+              // por si la hoja de estilo todavía no terminó de cargar.
+              `"${fontFamily}", Inter, system-ui, sans-serif`
+        : 'Inter, system-ui, sans-serif';
+
     const base = {
       width: w,
       height: h,
@@ -134,13 +177,34 @@ export class UltraTextUtil extends ShapeUtil<UltraTextShape> {
       fontSize,
       lineHeight: 1.2,
       textAlign: align,
-      fontFamily: 'Inter, system-ui, sans-serif',
-      fontWeight: 700,
+      fontFamily: family,
+      fontWeight: fontWeight || 700,
     } as const;
+
+    // Fondo que tapa el texto original al materializar (solo overlays del tracer):
+    // el recorte `patch` reproduce el fondo local exacto; si no hay, cae al color plano.
+    const cover =
+      overlay && materialized
+        ? patch
+          ? {
+              backgroundImage: `url(${patch})`,
+              backgroundSize: '100% 100%',
+              backgroundRepeat: 'no-repeat',
+            }
+          : bgColor
+            ? { backgroundColor: bgColor }
+            : {}
+        : {};
+
+    // Overlay aún sin tocar: invisible (se ve el original). La caja sigue existiendo como
+    // geometría, así tldraw muestra el contorno al pasar el mouse y permite editar.
+    if (overlay && !materialized) {
+      return <HTMLContainer style={{ width: w, height: h, opacity: 0, pointerEvents: 'none' }} />;
+    }
 
     if (isEditing) {
       return (
-        <HTMLContainer>
+        <HTMLContainer style={{ width: w, height: h, ...cover }}>
           <textarea
             autoFocus
             value={text}
@@ -148,7 +212,7 @@ export class UltraTextUtil extends ShapeUtil<UltraTextShape> {
               editor.updateShape({
                 id: shape.id,
                 type: 'ultra-text',
-                props: { text: e.target.value },
+                props: { text: e.target.value, edited: true },
               })
             }
             onPointerDown={stopEventPropagation}
@@ -168,17 +232,18 @@ export class UltraTextUtil extends ShapeUtil<UltraTextShape> {
     }
 
     return (
-      <HTMLContainer
-        style={{
-          ...base,
-          display: 'flex',
-          alignItems: 'center',
-          whiteSpace: 'pre-wrap',
-          overflow: 'hidden',
-          pointerEvents: 'none',
-        }}
-      >
-        {text}
+      <HTMLContainer style={{ width: w, height: h, ...cover, pointerEvents: 'none' }}>
+        <div
+          style={{
+            ...base,
+            display: 'flex',
+            alignItems: 'center',
+            whiteSpace: 'pre-wrap',
+            overflow: 'hidden',
+          }}
+        >
+          {text}
+        </div>
       </HTMLContainer>
     );
   }

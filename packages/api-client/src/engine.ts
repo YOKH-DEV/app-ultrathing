@@ -66,6 +66,13 @@ export interface TracedElement {
   color?: string | null;
   fill?: string | null;
   src?: string | null;
+  // Enfoque no destructivo (overlay): un texto del tracer no se pinta hasta editarse,
+  // así se ve el original. `patch`/`bg_color` tapan la zona al editar.
+  overlay?: boolean | null;
+  bg_color?: string | null;
+  patch?: string | null;
+  font_family?: string | null;
+  font_weight?: number | null;
 }
 
 /** Resultado de descomponer una imagen en objetos editables. */

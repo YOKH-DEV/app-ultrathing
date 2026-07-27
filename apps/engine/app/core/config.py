@@ -43,6 +43,9 @@ class Settings:
     vertex_model: str = os.getenv("VERTEX_MODEL", "zai-org/glm-5-maas")
     # Modelo de generación de imágenes en Vertex (Gemini "nano-banana", región global).
     vertex_image_model: str = os.getenv("VERTEX_IMAGE_MODEL", "gemini-2.5-flash-image")
+    # Modelo Gemini multimodal (visión→texto) para tareas de análisis de imagen: lo usa
+    # el tracer para inferir la familia tipográfica (Google Font) de cada texto detectado.
+    vertex_vision_model: str = os.getenv("VERTEX_VISION_MODEL", "gemini-2.5-flash")
     # Proyecto Remotion que renderiza los videos (necesita Node en la máquina).
     video_project_dir: str = os.getenv("VIDEO_PROJECT_DIR", str(_ROOT / "apps" / "video"))
     # Modelos de faster-whisper por nivel de calidad (tiny/base/small/medium). Se descargan

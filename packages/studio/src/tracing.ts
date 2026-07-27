@@ -7,6 +7,7 @@
  * paleta nombrada). El fondo reconstruido va como imagen (píxeles exactos) al fondo.
  */
 import { AssetRecordType, createShapeId, getHashForString, type Editor } from './sdk';
+import { ensureFont } from './fonts';
 
 
 /** Elemento agnóstico que emite el tracer (estructural: no acopla a @ultrathing/api-client). */
@@ -21,6 +22,11 @@ export interface StudioTraceElement {
   color?: string | null;
   fill?: string | null;
   src?: string | null;
+  overlay?: boolean | null;
+  bg_color?: string | null;
+  patch?: string | null;
+  font_family?: string | null;
+  font_weight?: number | null;
 }
 
 export interface StudioTrace {
@@ -66,6 +72,9 @@ export function traceToShapes(editor: Editor, trace: StudioTrace): number {
         });
         created++;
       } else if (el.kind === 'text' && el.text) {
+        // Carga la Google Font detectada por la IA para que el texto, al editarse, se
+        // re-dibuje con la familia más parecida a la original.
+        if (el.font_family) ensureFont(el.font_family);
         editor.createShape({
           id: createShapeId(),
           type: 'ultra-text',
@@ -78,6 +87,14 @@ export function traceToShapes(editor: Editor, trace: StudioTrace): number {
             color: el.color ?? '#111111',
             fontSize: el.font_size ?? 24,
             align: 'left',
+            // Overlay no destructivo: si viene del tracer (overlay), el texto queda
+            // invisible hasta editarse y `patch`/`bgColor` tapan el original en ese momento.
+            overlay: el.overlay ?? false,
+            bgColor: el.bg_color ?? '',
+            patch: el.patch ?? '',
+            fontFamily: el.font_family ?? '',
+            fontWeight: el.font_weight ?? 700,
+            edited: false,
           },
         });
         created++;
