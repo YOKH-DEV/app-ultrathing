@@ -10,6 +10,11 @@
     "dialog:default",
     "opener:default",
     "opener:allow-open-path",
-    "clipboard-manager:allow-read-image"
+    "clipboard-manager:allow-read-image",
+    "fs:allow-write-file",
+    {
+      "identifier": "fs:scope",
+      "allow": ["$HOME/**"]
+    }
   ]
 }
