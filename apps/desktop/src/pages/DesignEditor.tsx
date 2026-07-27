@@ -30,6 +30,7 @@ import {
 } from '@ultrathing/studio';
 import type { Editor, TLEditorSnapshot, TLImageShape } from '@ultrathing/studio/sdk';
 import type { StudioTrace } from '@ultrathing/studio';
+import { StudioRightPanel, StudioBlockGallery } from '../design/StudioPanels';
 
 /** Acciones rápidas de IA sobre el texto seleccionado (label visible → acción del motor). */
 const AI_ACTIONS: { action: RewriteAction; label: string }[] = [
@@ -68,8 +69,15 @@ export function DesignEditor() {
   const [showExport, setShowExport] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const editorRef = useRef<Editor | null>(null);
+  // Espejo en estado del editor: los paneles (Propiedades/Capas/Galería) sólo
+  // pueden montarse una vez que tldraw terminó de montar (onReady).
+  const [editor, setEditor] = useState<Editor | null>(null);
   const traceInputRef = useRef<HTMLInputElement>(null);
   const uploadImagesRef = useRef<HTMLInputElement>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+
+  const scrollTools = (dir: number) =>
+    toolbarRef.current?.scrollBy({ left: dir * 220, behavior: 'smooth' });
 
   useEffect(() => {
     if (!id) return;
@@ -376,8 +384,8 @@ export function DesignEditor() {
           : '';
 
   return (
-    <div className="flex h-[calc(100vh-7rem)] flex-col">
-      <div className="mb-3 flex items-center gap-3">
+    <div className="flex h-[calc(100dvh-9rem)] flex-col md:h-[calc(100vh-7rem)]">
+      <div className="mb-3 flex flex-wrap items-center gap-2 md:gap-3">
         <Button variant="ghost" size="sm" onClick={() => navigate('/diseno')}>
           ← Galería
         </Button>
@@ -392,6 +400,23 @@ export function DesignEditor() {
         >
           {statusLabel}
         </span>
+      </div>
+
+      {/* Barra de herramientas deslizable: las flechas ‹ › recorren todas las opciones
+          cuando no entran a la vista (pantallas chicas o celular). */}
+      <div className="mb-3 flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => scrollTools(-1)}
+          aria-label="Ver opciones anteriores"
+          className="shrink-0 rounded px-1.5 py-1 text-xl leading-none text-text-muted transition-colors hover:text-gold"
+        >
+          ‹
+        </button>
+        <div
+          ref={toolbarRef}
+          className="flex items-center gap-2 overflow-x-auto scroll-smooth [&::-webkit-scrollbar]:hidden [&>*]:shrink-0"
+        >
         <input
           ref={uploadImagesRef}
           type="file"
@@ -490,9 +515,18 @@ export function DesignEditor() {
             </div>
           )}
         </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => scrollTools(1)}
+          aria-label="Ver más opciones"
+          className="shrink-0 rounded px-1.5 py-1 text-xl leading-none text-text-muted transition-colors hover:text-gold"
+        >
+          ›
+        </button>
       </div>
 
-      <div className="mb-2 flex items-center gap-2">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
         <span className="text-xs text-gold">✨ Generar pieza:</span>
         <input
           value={genBrief}
@@ -561,21 +595,30 @@ export function DesignEditor() {
         </div>
       )}
 
-      <div className="min-h-0 flex-1 overflow-hidden rounded border border-line">
-        <Studio
-          snapshot={snapshot}
-          onSave={handleSave}
-          onReady={(editor) => {
-            editorRef.current = editor;
-            setZoom(editor.getZoomLevel());
-            // Reaccionar a la selección (barra de IA) y a la cámara (indicador de zoom).
-            editor.store.listen(() => {
-              setHasTextSel(!!getSelectedText(editor));
-              setZoom(editor.getZoomLevel());
-            });
-          }}
-        />
+      {/* Lienzo flexible + panel derecho fijo (Propiedades/Capas). En <lg el panel
+          se oculta (hidden lg:flex dentro de StudioRightPanel) y el lienzo ocupa todo. */}
+      <div className="flex min-h-0 flex-1 gap-3">
+        <div className="min-h-0 flex-1 overflow-hidden rounded border border-line">
+          <Studio
+            snapshot={snapshot}
+            onSave={handleSave}
+            onReady={(ed) => {
+              editorRef.current = ed;
+              setEditor(ed);
+              setZoom(ed.getZoomLevel());
+              // Reaccionar a la selección (barra de IA) y a la cámara (indicador de zoom).
+              ed.store.listen(() => {
+                setHasTextSel(!!getSelectedText(ed));
+                setZoom(ed.getZoomLevel());
+              });
+            }}
+          />
+        </div>
+        <StudioRightPanel editor={editor} />
       </div>
+
+      {/* Galería inferior: miniaturas de los bloques del tablero. */}
+      <StudioBlockGallery editor={editor} />
     </div>
   );
 }
