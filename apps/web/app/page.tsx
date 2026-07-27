@@ -5,8 +5,8 @@ import { WebLogin } from './login';
 import { Dashboard } from './dashboard';
 
 // La web es un dashboard de solo lectura: muestra datos, no ejecuta trabajo pesado.
-// Bypass temporal de auth mientras se construyen los módulos — reactivar antes de shipear.
-const SKIP_AUTH_DURING_DEV = true;
+// Auth real activo: cada usuario entra o crea su cuenta y trabaja en su propia sesión.
+const SKIP_AUTH_DURING_DEV = false;
 
 export default function Page() {
   const { session, loading } = useSession();

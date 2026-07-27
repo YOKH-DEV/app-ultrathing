@@ -6,5 +6,15 @@ import type { Database } from '@ultrathing/core';
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
 
-/** Cliente Supabase compartido por web y escritorio. Auth + datos + realtime. */
-export const supabase = createClient<Database>(url, anonKey);
+/** Cliente Supabase compartido por web y escritorio. Auth + datos + realtime.
+ *
+ * Sesión persistente: el token se guarda en localStorage (en la webview de Tauri
+ * persiste en el data dir de la app) y se auto-refresca, así la sesión sobrevive
+ * cerrar y reabrir la app en la misma PC — no hay que volver a entrar cada vez. */
+export const supabase = createClient<Database>(url, anonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    storageKey: 'ultrathing-auth',
+  },
+});

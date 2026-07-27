@@ -2,19 +2,22 @@ import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
-/** Envía un código OTP (y enlace) de acceso al correo. Crea el usuario si no existe. */
-export async function signIn(email: string): Promise<void> {
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: { shouldCreateUser: true },
-  });
+/** Inicia sesión con correo y contraseña. Abre la sesión si las credenciales son válidas. */
+export async function signIn(email: string, password: string): Promise<void> {
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
 }
 
-/** Verifica el código OTP de 6 dígitos que llegó al correo y abre la sesión. */
-export async function verifyOtp(email: string, token: string): Promise<void> {
-  const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
+/**
+ * Crea una cuenta con correo y contraseña.
+ * Devuelve `true` si la sesión quedó abierta al instante (confirmación de correo
+ * desactivada en Supabase), o `false` si el proyecto exige confirmar el correo
+ * antes de poder entrar — en ese caso el usuario existe pero aún no hay sesión.
+ */
+export async function signUp(email: string, password: string): Promise<boolean> {
+  const { data, error } = await supabase.auth.signUp({ email, password });
   if (error) throw error;
+  return Boolean(data.session);
 }
 
 /** Cierra la sesión actual. */

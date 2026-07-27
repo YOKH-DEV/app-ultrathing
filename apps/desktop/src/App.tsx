@@ -14,8 +14,8 @@ const DesignEditor = lazy(() =>
   import('./pages/DesignEditor').then((m) => ({ default: m.DesignEditor })),
 );
 
-// Bypass temporal de auth mientras se construyen los módulos — reactivar antes de shipear.
-const SKIP_AUTH_DURING_DEV = true;
+// Auth real activo: cada usuario entra o crea su cuenta y trabaja en su propia sesión.
+const SKIP_AUTH_DURING_DEV = false;
 
 export default function App() {
   const { session, loading } = useSession();
