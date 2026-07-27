@@ -61,18 +61,28 @@ export function Studio({
         }
       }
 
-      // Autosave debounced: solo cambios del usuario sobre el documento.
+      // Autosave debounced vía SIDE EFFECTS (no vía `store.listen`): los side effects se
+      // disparan de forma síncrona ante cualquier cambio de shapes/assets, venga de la
+      // interacción directa o de las herramientas que crean shapes por código (+ Bloque,
+      // imagen → editable, generar pieza, subir imágenes…). `store.listen` dependía del
+      // flush por requestAnimationFrame, que Chrome SUSPENDE cuando la ventana no está en
+      // primer plano → el diseño no se guardaba (ni su miniatura). Los side effects no
+      // tienen ese problema.
       let unlisten = () => {};
       if (onSave) {
-        unlisten = editor.store.listen(
-          () => {
-            if (timer.current) clearTimeout(timer.current);
-            timer.current = setTimeout(() => {
-              void onSave(editor.getSnapshot());
-            }, autosaveMs);
-          },
-          { source: 'user', scope: 'document' },
-        );
+        const schedule = () => {
+          if (timer.current) clearTimeout(timer.current);
+          timer.current = setTimeout(() => {
+            void onSave(editor.getSnapshot());
+          }, autosaveMs);
+        };
+        const off = [
+          editor.sideEffects.registerAfterCreateHandler('shape', schedule),
+          editor.sideEffects.registerAfterChangeHandler('shape', schedule),
+          editor.sideEffects.registerAfterDeleteHandler('shape', schedule),
+          editor.sideEffects.registerAfterCreateHandler('asset', schedule),
+        ];
+        unlisten = () => off.forEach((f) => f());
       }
 
       onReady?.(editor);
