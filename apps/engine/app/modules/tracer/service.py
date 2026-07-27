@@ -26,12 +26,13 @@ import pytesseract
 from sklearn.cluster import KMeans
 
 from app.core.config import settings
+from app.core.ocr_prep import enhance_gray
 from app.core.paths import unique_path
 from app.core.supabase import insert_asset
 from .fonts import detect_fonts
 from .schemas import TracedElement, TraceResult
 
-_MIN_CONF = 45  # confianza mínima de Tesseract para aceptar una palabra
+_MIN_CONF = 35  # confianza mínima de Tesseract (bajo → captura más texto tenue, menos huecos)
 
 
 def _hex(bgr: "np.ndarray | tuple[int, int, int]") -> str:
@@ -110,11 +111,19 @@ def _local_patch(
     return _png_dataurl(patch), bg_hex
 
 
-def _ocr_elements(rgb: np.ndarray, bgr: np.ndarray) -> list[TracedElement]:
+def _ocr_elements(bgr: np.ndarray) -> list[TracedElement]:
     """Extrae bloques de texto (agrupados por línea) como OVERLAYS editables: bbox, tamaño,
-    color, peso, y un parche del fondo local para tapar el texto original al editar."""
+    color, peso, y un parche del fondo local para tapar el texto original al editar.
+
+    El OCR corre sobre una versión en gris con contraste realzado (mismo tamaño que la
+    imagen, así las cajas siguen mapeando 1:1 sobre el original) para no perder texto en
+    fondos de color o de bajo contraste. `--oem 1 --psm 3`: motor LSTM + auto-layout."""
+    gray = enhance_gray(bgr)
     data = pytesseract.image_to_data(
-        rgb, lang=settings.ocr_lang, output_type=pytesseract.Output.DICT
+        gray,
+        lang=settings.ocr_lang,
+        config='--oem 1 --psm 3',
+        output_type=pytesseract.Output.DICT,
     )
     groups: dict[tuple[int, int, int], dict[str, Any]] = {}
     for i, word in enumerate(data["text"]):
@@ -208,9 +217,8 @@ def _decompose(
     if bgr is None:
         raise ValueError("No se pudo leer la imagen (formato no soportado).")
     h, w = bgr.shape[:2]
-    rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
 
-    text_elements = _ocr_elements(rgb, bgr)
+    text_elements = _ocr_elements(bgr)
     on_progress(70)
 
     background = _flat_background(bgr)
