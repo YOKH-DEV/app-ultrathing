@@ -1,4 +1,4 @@
-import { Download, Image, FileText, Search, PenLine, Users, Mic, ScanText, Palette } from 'lucide-react';
+import { Download, FileText, Search, PenLine, Users, Mic, ScanText, Palette } from 'lucide-react';
 import { registerFeature } from '@ultrathing/core';
 
 // Registro de features. El `surface` decide dónde aparece cada uno.
@@ -11,8 +11,9 @@ export const downloader = registerFeature({
   route: '/downloader',
 });
 
+// El trabajo de imagen (quitar fondo, generar imagen, imagen→editable) vive DENTRO
+// de la sección Diseño, no como sección propia — por eso ya no se registra "Imagen".
 // Placeholders de futuras fases — se activan al implementar su módulo.
-registerFeature({ id: 'image', name: 'Imagen', description: 'Quita fondos y mejora fotos.', icon: Image, surface: 'desktop', route: '/image' });
 registerFeature({ id: 'files', name: 'Archivos', description: 'Convierte PDF con tablas a CSV.', icon: FileText, surface: 'desktop', route: '/files' });
 registerFeature({ id: 'scraper', name: 'Scraper', description: 'Extrae leads desde la web.', icon: Search, surface: 'desktop', route: '/scraper' });
 registerFeature({ id: 'leads', name: 'Leads', description: 'Contactos extraídos, en vivo.', icon: Users, surface: 'desktop', route: '/leads' });

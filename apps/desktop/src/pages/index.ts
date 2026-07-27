@@ -1,7 +1,6 @@
 import { type ComponentType } from 'react';
 import { CopywriterPanel, VoiceToTextPanel, OcrPanel } from '@ultrathing/features';
 import { DownloaderPage } from './DownloaderPage';
-import { ImagePage } from './ImagePage';
 import { FilesPage } from './FilesPage';
 import { ScraperPage } from './ScraperPage';
 import { LeadsPage } from './LeadsPage';
@@ -13,7 +12,6 @@ import { DesignGallery } from './DesignGallery';
  */
 export const pageByRoute: Record<string, ComponentType> = {
   '/downloader': DownloaderPage,
-  '/image': ImagePage,
   '/files': FilesPage,
   '/scraper': ScraperPage,
   '/leads': LeadsPage,
