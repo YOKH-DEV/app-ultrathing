@@ -14,6 +14,8 @@
     "@remotion/player": "^4.0.498",
     "@tldraw/tlschema": "5.2.5",
     "@ultrathing/ui": "workspace:*",
+    "jspdf": "^4.2.1",
+    "jszip": "^3.10.1",
     "remotion": "^4.0.0",
     "tldraw": "^5.2.5"
   },

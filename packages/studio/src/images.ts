@@ -2,7 +2,7 @@
  * Helper para incrustar una imagen (dataURL) en el lienzo como shape editable de tldraw.
  * Lo usa la generación de imágenes con IA (slice 4): prompt → imagen → al canvas.
  */
-import { AssetRecordType, createShapeId, getHashForString, type Editor } from './sdk';
+import { AssetRecordType, createShapeId, getHashForString, type Editor, type TLShapeId } from './sdk';
 
 /** Dimensiones naturales de una imagen a partir de su dataURL (entorno navegador). */
 function naturalSize(src: string): Promise<{ w: number; h: number }> {
@@ -46,4 +46,31 @@ export async function addImage(editor: Editor, src: string): Promise<void> {
     props: { assetId, w, h },
   });
   editor.select(id);
+}
+
+/**
+ * Reemplaza EN EL MISMO LUGAR la imagen de un shape (misma posición y tamaño) por otra
+ * versión (dataURL) — p. ej. la misma foto sin fondo. No mueve ni redimensiona: solo
+ * cambia los píxeles. Devuelve true si reemplazó, false si el shape no era una imagen.
+ */
+export async function replaceImageSrc(
+  editor: Editor,
+  shapeId: TLShapeId,
+  src: string,
+): Promise<boolean> {
+  const shape = editor.getShape(shapeId);
+  if (!shape || shape.type !== 'image') return false;
+  const { w: natW, h: natH } = await naturalSize(src);
+  const assetId = AssetRecordType.createId(getHashForString(src));
+  editor.createAssets([
+    {
+      id: assetId,
+      type: 'image',
+      typeName: 'asset',
+      meta: {},
+      props: { w: natW, h: natH, name: 'sin-fondo.png', isAnimated: false, mimeType: 'image/png', src },
+    },
+  ]);
+  editor.updateShape({ id: shapeId, type: 'image', props: { assetId } });
+  return true;
 }

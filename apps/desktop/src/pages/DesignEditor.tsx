@@ -13,16 +13,22 @@ import {
 import {
   Studio,
   exportPng,
+  exportThumbnail,
   downloadBlob,
   isStudioDocument,
   traceToShapes,
   getSelectedText,
   setText,
   addImage,
+  replaceImageSrc,
+  addBlock,
+  addImageBlocks,
+  exportBlocksZip,
+  exportBlocksPdf,
   canvasToTrace,
   VideoPreview,
 } from '@ultrathing/studio';
-import type { Editor, TLEditorSnapshot } from '@ultrathing/studio/sdk';
+import type { Editor, TLEditorSnapshot, TLImageShape } from '@ultrathing/studio/sdk';
 import type { StudioTrace } from '@ultrathing/studio';
 
 /** Acciones rápidas de IA sobre el texto seleccionado (label visible → acción del motor). */
@@ -57,9 +63,13 @@ export function DesignEditor() {
   const [preview, setPreview] = useState<StudioTrace | null>(null);
   const [hasTextSel, setHasTextSel] = useState(false);
   const [aiBusy, setAiBusy] = useState<RewriteAction | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [removingBg, setRemovingBg] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const editorRef = useRef<Editor | null>(null);
   const traceInputRef = useRef<HTMLInputElement>(null);
+  const uploadImagesRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -80,7 +90,13 @@ export function DesignEditor() {
       if (!id) return;
       setStatus('saving');
       try {
-        await updateDesign(id, { elements: snap as unknown as Design['elements'] });
+        // Junto con el documento guardamos una miniatura para la galería (vista previa).
+        const editor = editorRef.current;
+        const thumbnail = editor ? await exportThumbnail(editor) : null;
+        await updateDesign(id, {
+          elements: snap as unknown as Design['elements'],
+          thumbnail,
+        });
         setStatus('saved');
       } catch {
         setStatus('error');
@@ -224,7 +240,61 @@ export function DesignEditor() {
       });
   }
 
+  // Quitar fondo de la imagen seleccionada en el lienzo (rembg, en el motor) y
+  // reemplazarla en su mismo lugar por la versión recortada. Antes vivía en la
+  // sección Imagen; ahora todo el trabajo de imagen sucede dentro del Studio.
+  async function handleRemoveBg() {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const img = editor.getSelectedShapes().find((s) => s.type === 'image') as
+      | TLImageShape
+      | undefined;
+    if (!img) {
+      setError('Seleccioná una imagen del lienzo para quitarle el fondo.');
+      return;
+    }
+    const asset = img.props.assetId ? editor.getAsset(img.props.assetId) : undefined;
+    const src = asset?.props.src;
+    if (!src) {
+      setError('No se pudo leer la imagen seleccionada.');
+      return;
+    }
+    setRemovingBg(true);
+    setError(null);
+    try {
+      const blob = await fetch(src).then((r) => r.blob());
+      const { image } = await engineClient.image.removeBackgroundInline(blob);
+      await replaceImageSrc(editor, img.id, image);
+    } catch {
+      setError('No se pudo quitar el fondo (¿motor ok?).');
+    } finally {
+      setRemovingBg(false);
+    }
+  }
+
+  // Agrega un bloque (frame) del tamaño del diseño para armar otra pieza en el tablero.
+  function handleAddBlock() {
+    const editor = editorRef.current;
+    if (!editor || !design) return;
+    addBlock(editor, design.width, design.height, 'Diseño');
+  }
+
+  // Sube varias imágenes: cada una entra como su propio bloque, en fila.
+  async function handleUploadImages(files: File[]) {
+    const editor = editorRef.current;
+    if (!editor || !files.length) return;
+    setError(null);
+    try {
+      await addImageBlocks(editor, files);
+    } catch {
+      setError('No se pudieron subir las imágenes.');
+    }
+  }
+
+  const safeName = (title || 'disenos').replace(/[^\w.-]+/g, '_');
+
   async function handleExport() {
+    setShowExport(false);
     const editor = editorRef.current;
     if (!editor) return;
     setExporting(true);
@@ -235,9 +305,51 @@ export function DesignEditor() {
         setError('El lienzo está vacío: agrega algo antes de exportar.');
         return;
       }
-      downloadBlob(blob, `${(title || 'diseno').replace(/[^\w.-]+/g, '_')}.png`);
+      downloadBlob(blob, `${safeName}.png`);
     } catch {
       setError('No se pudo exportar el PNG.');
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  // "Por diseños": cada bloque como PNG suelto, en un ZIP.
+  async function handleExportZip() {
+    setShowExport(false);
+    const editor = editorRef.current;
+    if (!editor) return;
+    setExporting(true);
+    setError(null);
+    try {
+      const blob = await exportBlocksZip(editor);
+      if (!blob) {
+        setError('No hay bloques en el tablero. Agregá bloques con "+ Bloque" o usá "Diseño actual".');
+        return;
+      }
+      downloadBlob(blob, `${safeName}.zip`);
+    } catch {
+      setError('No se pudo exportar el ZIP.');
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  // "Por hojas": un PDF con cada bloque en su propia hoja.
+  async function handleExportPdf() {
+    setShowExport(false);
+    const editor = editorRef.current;
+    if (!editor) return;
+    setExporting(true);
+    setError(null);
+    try {
+      const blob = await exportBlocksPdf(editor);
+      if (!blob) {
+        setError('No hay bloques en el tablero. Agregá bloques con "+ Bloque".');
+        return;
+      }
+      downloadBlob(blob, `${safeName}.pdf`);
+    } catch {
+      setError('No se pudo exportar el PDF.');
     } finally {
       setExporting(false);
     }
@@ -281,6 +393,24 @@ export function DesignEditor() {
           {statusLabel}
         </span>
         <input
+          ref={uploadImagesRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            const files = Array.from(e.target.files ?? []);
+            if (files.length) handleUploadImages(files);
+            e.target.value = '';
+          }}
+        />
+        <Button variant="ghost" size="sm" onClick={handleAddBlock}>
+          + Bloque
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => uploadImagesRef.current?.click()}>
+          ⬆ Subir imágenes
+        </Button>
+        <input
           ref={traceInputRef}
           type="file"
           accept="image/*"
@@ -299,15 +429,67 @@ export function DesignEditor() {
         >
           {tracing !== null ? `Procesando… ${Math.round(tracing)}%` : '✨ Imagen → editable'}
         </Button>
+        <Button variant="ghost" size="sm" onClick={handleRemoveBg} disabled={removingBg}>
+          {removingBg ? 'Quitando…' : '✂️ Quitar fondo'}
+        </Button>
+        {/* Zoom: acercar/alejar para detallar. El % ajusta a la vista al hacer clic. */}
+        <div className="flex items-center gap-0.5 rounded border border-line px-0.5">
+          <Button variant="ghost" size="sm" onClick={() => editorRef.current?.zoomOut()}>
+            −
+          </Button>
+          <button
+            type="button"
+            onClick={() => editorRef.current?.zoomToFit({ animation: { duration: 150 } })}
+            title="Ajustar a la vista"
+            className="min-w-[3rem] text-xs text-text-muted transition-colors hover:text-gold"
+          >
+            {Math.round(zoom * 100)}%
+          </button>
+          <Button variant="ghost" size="sm" onClick={() => editorRef.current?.zoomIn()}>
+            +
+          </Button>
+        </div>
         <Button variant="ghost" size="sm" onClick={openPreview}>
           ▶ Preview
         </Button>
         <Button variant="ghost" size="sm" onClick={handleVideo} disabled={video !== null}>
           {video !== null ? `Video… ${Math.round(video)}%` : '🎬 Video'}
         </Button>
-        <Button variant="ghost" size="sm" onClick={handleExport} disabled={exporting}>
-          {exporting ? 'Exportando…' : 'Exportar PNG'}
-        </Button>
+        <div className="relative">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowExport((v) => !v)}
+            disabled={exporting}
+          >
+            {exporting ? 'Exportando…' : '⬇ Descargar ▾'}
+          </Button>
+          {showExport && (
+            <div className="absolute right-0 top-full z-30 mt-1 w-60 rounded border border-line bg-elevated p-1 shadow-lg">
+              <button
+                type="button"
+                onClick={handleExport}
+                className="block w-full rounded px-3 py-1.5 text-left text-sm text-text hover:bg-base"
+              >
+                Diseño actual (PNG)
+              </button>
+              <button
+                type="button"
+                onClick={handleExportZip}
+                className="block w-full rounded px-3 py-1.5 text-left text-sm text-text hover:bg-base"
+              >
+                Por diseños — PNG en ZIP
+              </button>
+              <button
+                type="button"
+                onClick={handleExportPdf}
+                className="block w-full rounded px-3 py-1.5 text-left text-sm text-text hover:bg-base"
+              >
+                Por hojas — PDF
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="mb-2 flex items-center gap-2">
@@ -385,8 +567,12 @@ export function DesignEditor() {
           onSave={handleSave}
           onReady={(editor) => {
             editorRef.current = editor;
-            // Mostrar la barra de IA solo cuando hay un texto seleccionado.
-            editor.store.listen(() => setHasTextSel(!!getSelectedText(editor)));
+            setZoom(editor.getZoomLevel());
+            // Reaccionar a la selección (barra de IA) y a la cámara (indicador de zoom).
+            editor.store.listen(() => {
+              setHasTextSel(!!getSelectedText(editor));
+              setZoom(editor.getZoomLevel());
+            });
           }}
         />
       </div>

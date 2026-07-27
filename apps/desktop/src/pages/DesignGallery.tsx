@@ -91,8 +91,16 @@ export function DesignGallery() {
                   onClick={() => navigate(`/diseno/${d.id}`)}
                   className="block w-full text-left"
                 >
-                  <div className="mb-2 grid aspect-video place-items-center rounded bg-elevated text-xs text-text-faint">
-                    {d.width}×{d.height}
+                  <div className="mb-2 grid aspect-video place-items-center overflow-hidden rounded bg-elevated text-xs text-text-faint">
+                    {d.thumbnail ? (
+                      <img
+                        src={d.thumbnail}
+                        alt={d.title}
+                        className="h-full w-full object-contain"
+                      />
+                    ) : (
+                      <span>{d.width}×{d.height}</span>
+                    )}
                   </div>
                   <p className="truncate text-sm text-text">{d.title}</p>
                 </button>

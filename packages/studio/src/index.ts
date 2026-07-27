@@ -14,8 +14,16 @@ export {
   type StudioDocument,
   isStudioDocument,
   exportPng,
+  exportThumbnail,
   downloadBlob,
 } from './persistence';
+export {
+  getBlocks,
+  addBlock,
+  addImageBlocks,
+  exportBlocksZip,
+  exportBlocksPdf,
+} from './board';
 export {
   traceToShapes,
   type StudioTrace,
@@ -29,7 +37,8 @@ export {
   type UltraTextShape,
 } from './shapes';
 export { getSelectedText, setText } from './text-actions';
-export { addImage } from './images';
+export { addImage, replaceImageSrc } from './images';
+export { ensureFont } from './fonts';
 export { canvasToTrace } from './canvas-export';
 export { VideoPreview, type VideoPreviewProps, type PlayerRef } from './VideoPreview';
 export { DesignVideo, VIDEO_FPS, videoDurationInFrames, type VideoElement } from './video';
