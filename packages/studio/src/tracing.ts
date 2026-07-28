@@ -38,6 +38,33 @@ export interface StudioTrace {
 }
 
 /**
+ * Calcula el tamaño de fuente para que el texto ocupe EXACTAMENTE el ancho de su caja
+ * original (fit-to-width). Es lo que hace que la capa de texto conserve tamaño y posición
+ * fieles al original — la altura del OCR sola subestima el tamaño real. Mide con la misma
+ * familia/peso que se va a renderizar; acota por la altura de la caja para textos cortos.
+ */
+function fitFontSize(
+  text: string,
+  family: string | null | undefined,
+  weight: number,
+  targetWidth: number,
+  targetHeight: number,
+): number {
+  if (typeof document === 'undefined') return Math.max(6, Math.round(targetHeight));
+  const ctx = document.createElement('canvas').getContext('2d');
+  if (!ctx) return Math.max(6, Math.round(targetHeight));
+  const fam = family && family.length ? `"${family}", Inter, sans-serif` : 'Inter, sans-serif';
+  const base = 100;
+  ctx.font = `${weight} ${base}px ${fam}`;
+  const measured = ctx.measureText(text).width || targetWidth;
+  let size = base * (targetWidth / measured);
+  // Para textos cortos en cajas anchas, el ancho mandaría un tamaño enorme: acotar por
+  // la altura real de la línea (con un margen).
+  size = Math.min(size, targetHeight * 1.35);
+  return Math.max(6, Math.round(size));
+}
+
+/**
  * Monta los elementos del tracer como shapes en el lienzo y encuadra la vista.
  * Devuelve la cantidad de shapes creados.
  */
@@ -72,28 +99,29 @@ export function traceToShapes(editor: Editor, trace: StudioTrace): number {
         });
         created++;
       } else if (el.kind === 'text' && el.text) {
-        // Carga la Google Font detectada por la IA para que el texto, al editarse, se
-        // re-dibuje con la familia más parecida a la original.
+        // Carga la Google Font detectada por la IA para el render fiel del texto.
         if (el.font_family) ensureFont(el.font_family);
+        const weight = el.font_weight ?? 400;
+        // Tamaño ajustado al ancho real → conserva tamaño y posición del original.
+        const fontSize = fitFontSize(el.text, el.font_family, weight, el.w, el.h);
         editor.createShape({
           id: createShapeId(),
           type: 'ultra-text',
           x: el.x,
           y: el.y,
           props: {
-            w: Math.max(24, el.w),
-            h: Math.max(el.font_size ?? 24, el.h),
+            w: Math.max(8, el.w),
+            h: Math.max(el.h, fontSize * 1.15),
             text: el.text,
             color: el.color ?? '#111111',
-            fontSize: el.font_size ?? 24,
+            fontSize,
             align: 'left',
-            // Overlay no destructivo: si viene del tracer (overlay), el texto queda
-            // invisible hasta editarse y `patch`/`bgColor` tapan el original en ese momento.
+            // El tracer ahora separa el texto del fondo → capa visible y movible.
             overlay: el.overlay ?? false,
             bgColor: el.bg_color ?? '',
             patch: el.patch ?? '',
             fontFamily: el.font_family ?? '',
-            fontWeight: el.font_weight ?? 700,
+            fontWeight: weight,
             edited: false,
           },
         });

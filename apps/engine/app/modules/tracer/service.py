@@ -111,9 +111,12 @@ def _local_patch(
     return _png_dataurl(patch), bg_hex
 
 
-def _ocr_elements(bgr: np.ndarray) -> list[TracedElement]:
-    """Extrae bloques de texto (agrupados por línea) como OVERLAYS editables: bbox, tamaño,
-    color, peso, y un parche del fondo local para tapar el texto original al editar.
+def _ocr_elements(
+    bgr: np.ndarray,
+) -> tuple[list[TracedElement], list[tuple[int, int, int, int]]]:
+    """Extrae bloques de texto (agrupados por línea) como capas editables/movibles: bbox,
+    tamaño, color y peso. Devuelve también las cajas para BORRARLAS del fondo, de modo que
+    cada texto se separe de verdad (se puede mover/editar sin que quede el original debajo).
 
     El OCR corre sobre una versión en gris con contraste realzado (mismo tamaño que la
     imagen, así las cajas siguen mapeando 1:1 sobre el original) para no perder texto en
@@ -144,40 +147,72 @@ def _ocr_elements(bgr: np.ndarray) -> list[TracedElement]:
 
     img_h, img_w = bgr.shape[:2]
     elements: list[TracedElement] = []
+    boxes: list[tuple[int, int, int, int]] = []
     for g in groups.values():
-        # Padding proporcional: la caja del overlay debe tapar por completo el texto
-        # original (incluido el anti-aliasing que se sale un poco de la bbox del OCR).
-        raw_h = g["y1"] - g["y0"]
-        pad = max(2, int(raw_h * 0.15))
-        x0 = max(0, g["x0"] - pad)
-        y0 = max(0, g["y0"] - pad)
-        x1 = min(img_w, g["x1"] + pad)
-        y1 = min(img_h, g["y1"] + pad)
-        if x1 <= x0 or y1 <= y0:
+        # Caja REAL del texto (para posición y tamaño exactos de la capa).
+        rx0, ry0, rx1, ry1 = g["x0"], g["y0"], g["x1"], g["y1"]
+        if rx1 <= rx0 or ry1 <= ry0:
             continue
+        # Caja de BORRADO: la real + un margen, para tapar el texto (y su anti-aliasing)
+        # en el fondo sin desplazar la posición reportada de la capa.
+        pad = max(2, int((ry1 - ry0) * 0.18))
+        ex0 = max(0, rx0 - pad)
+        ey0 = max(0, ry0 - pad)
+        ex1 = min(img_w, rx1 + pad)
+        ey1 = min(img_h, ry1 + pad)
 
-        crop = bgr[y0:y1, x0:x1]
+        crop = bgr[ry0:ry1, rx0:rx1]
         color = _dominant_pair_color(crop) if crop.size else "#111111"
         weight = _text_weight(crop, color)
-        patch, bg_color = _local_patch(bgr, x0, y0, x1, y1)
 
         elements.append(
             TracedElement(
                 kind="text",
-                x=float(x0),
-                y=float(y0),
-                w=float(x1 - x0),
-                h=float(y1 - y0),
+                x=float(rx0),
+                y=float(ry0),
+                w=float(rx1 - rx0),  # ancho real → el cliente ajusta la fuente a este ancho
+                h=float(ry1 - ry0),  # alto real de la línea de texto
                 text=" ".join(g["words"]),
                 font_size=float(int(np.median(g["heights"]))),
                 color=color,
-                overlay=True,
-                bg_color=bg_color,
-                patch=patch,
+                overlay=False,  # capa visible y movible (el texto ya no vive en el fondo)
                 font_weight=weight,
             )
         )
-    return elements
+        boxes.append((ex0, ey0, ex1, ey1))
+    return elements, boxes
+
+
+def _erase_all_text(bgr: np.ndarray, boxes: list[tuple[int, int, int, int]]) -> np.ndarray:
+    """Reconstruye el fondo BORRANDO todas las cajas de texto, para que los textos —ya
+    convertidos en capas— se puedan mover sin dejar el original debajo. Borde uniforme →
+    relleno plano con el color que rodea (impecable en fondos lisos); borde texturado →
+    inpaint (mejor esfuerzo en fotos)."""
+    if not boxes:
+        return bgr
+    out = bgr.copy()
+    h, w = bgr.shape[:2]
+    inpaint_mask = np.zeros((h, w), dtype=np.uint8)
+    need_inpaint = False
+    for x0, y0, x1, y1 in boxes:
+        m = max(6, int((y1 - y0) * 0.5))
+        rx0, ry0, rx1, ry1 = max(0, x0 - m), max(0, y0 - m), min(w, x1 + m), min(h, y1 + m)
+        ring = np.concatenate(
+            [
+                out[ry0:y0, rx0:rx1].reshape(-1, 3),
+                out[y1:ry1, rx0:rx1].reshape(-1, 3),
+                out[y0:y1, rx0:x0].reshape(-1, 3),
+                out[y0:y1, x1:rx1].reshape(-1, 3),
+            ]
+        )
+        if len(ring) and ring.std(axis=0).mean() < 22:
+            out[y0:y1, x0:x1] = np.median(ring, axis=0)
+        else:
+            inpaint_mask[y0:y1, x0:x1] = 255
+            need_inpaint = True
+    if need_inpaint:
+        out = cv2.inpaint(out, inpaint_mask, 5, cv2.INPAINT_TELEA)
+    return out
 
 
 def _flat_background(bgr: np.ndarray) -> str | None:
@@ -211,26 +246,30 @@ def _palette(bgr: np.ndarray, k: int = 5) -> list[str]:
 def _decompose(
     data: bytes, filename: str, on_progress: Callable[[float], None]
 ) -> tuple[TraceResult, bytes, np.ndarray]:
-    """Descompone SIN dañar: fondo = imagen original intacta + textos overlay editables."""
+    """Descompone en CAPAS movibles: fondo con los textos borrados + cada texto como capa
+    editable/movible encima (en su posición original)."""
     on_progress(10)
     bgr = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
     if bgr is None:
         raise ValueError("No se pudo leer la imagen (formato no soportado).")
     h, w = bgr.shape[:2]
 
-    text_elements = _ocr_elements(bgr)
-    on_progress(70)
+    text_elements, boxes = _ocr_elements(bgr)
+    on_progress(60)
 
-    background = _flat_background(bgr)
-    palette = _palette(bgr)
+    # Fondo = imagen con los textos borrados, así cada texto (ya capa) se mueve libre.
+    clean = _erase_all_text(bgr, boxes)
+    on_progress(80)
+
+    background = _flat_background(clean)
+    palette = _palette(clean)
     on_progress(90)
 
-    # El fondo es la imagen ORIGINAL, sin un solo pixel modificado.
-    original_png = cv2.imencode(".png", bgr)[1].tobytes()
+    clean_png = cv2.imencode(".png", clean)[1].tobytes()
     bg_element = TracedElement(
-        kind="image", x=0, y=0, w=float(w), h=float(h), src=_png_dataurl(bgr)
+        kind="image", x=0, y=0, w=float(w), h=float(h), src=_png_dataurl(clean)
     )
-    # z-order: imagen original (atrás) → textos overlay (adelante, invisibles hasta editar).
+    # z-order: fondo limpio (atrás) → textos como capas visibles y movibles (adelante).
     elements = [bg_element, *text_elements]
 
     result = TraceResult(
@@ -242,9 +281,10 @@ def _decompose(
         count=len(elements),
     )
     on_progress(100)
-    # Se devuelve también el BGR para que la corrutina llame a Gemini (auth async) sin
-    # re-decodificar la imagen. La detección de fuente vive fuera del thread a propósito.
-    return result, original_png, bgr
+    # Se persiste el fondo limpio; se devuelve el BGR ORIGINAL (con los textos aún visibles)
+    # para que la detección de fuente por IA vea las tipografías. Vive fuera del thread
+    # porque la auth de Vertex es async.
+    return result, clean_png, bgr
 
 
 def _persist(token: str, user_id: str, filename: str, bg_png: bytes) -> None:
