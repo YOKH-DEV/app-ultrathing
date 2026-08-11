@@ -21,6 +21,9 @@ import {
   setText,
   addImage,
   replaceImageSrc,
+  getBackground,
+  setBackground,
+  clearBackground,
   addBlock,
   addImageBlocks,
   exportBlocksZip,
@@ -31,6 +34,9 @@ import {
 import type { Editor, TLEditorSnapshot, TLImageShape } from '@ultrathing/studio/sdk';
 import type { StudioTrace } from '@ultrathing/studio';
 import { StudioRightPanel, StudioBlockGallery } from '../design/StudioPanels';
+
+/** Colores de fondo a un clic (tema de la casa + los dos neutros de siempre). */
+const BG_SWATCHES = ['#ffffff', '#f5efe0', '#d4af37', '#111111', '#0f172a'];
 
 /** Acciones rápidas de IA sobre el texto seleccionado (label visible → acción del motor). */
 const AI_ACTIONS: { action: RewriteAction; label: string }[] = [
@@ -67,6 +73,9 @@ export function DesignEditor() {
   const [zoom, setZoom] = useState(1);
   const [removingBg, setRemovingBg] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [showBg, setShowBg] = useState(false);
+  const [bgColor, setBgColor] = useState('#ffffff');
+  const [bgBusy, setBgBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const editorRef = useRef<Editor | null>(null);
   // Espejo en estado del editor: los paneles (Propiedades/Capas/Galería) sólo
@@ -74,6 +83,7 @@ export function DesignEditor() {
   const [editor, setEditor] = useState<Editor | null>(null);
   const traceInputRef = useRef<HTMLInputElement>(null);
   const uploadImagesRef = useRef<HTMLInputElement>(null);
+  const bgImageRef = useRef<HTMLInputElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
 
   const scrollTools = (dir: number) =>
@@ -299,6 +309,53 @@ export function DesignEditor() {
     }
   }
 
+  // --- Fondo del lienzo ---
+  // Aplica al bloque en el que se está trabajando (o a la pieza entera si todavía no hay
+  // bloques). El fondo es un shape más: queda al fondo, bloqueado, y viaja solo en el
+  // guardado, en la miniatura y en las descargas.
+
+  function openBgMenu() {
+    const editor = editorRef.current;
+    if (editor && !showBg) {
+      const current = getBackground(editor);
+      if (current?.type === 'color') setBgColor(current.value);
+    }
+    setShowExport(false);
+    setShowBg((v) => !v);
+  }
+
+  function applyBgColor(value: string) {
+    const editor = editorRef.current;
+    if (!editor || !design) return;
+    setBgColor(value);
+    setError(null);
+    void setBackground(editor, { type: 'color', value }, design).catch(() =>
+      setError('No se pudo aplicar el color de fondo.'),
+    );
+  }
+
+  async function applyBgImage(file: File) {
+    const editor = editorRef.current;
+    if (!editor || !design) return;
+    setBgBusy(true);
+    setError(null);
+    try {
+      await setBackground(editor, { type: 'image', value: file }, design);
+      setShowBg(false);
+    } catch {
+      setError('No se pudo poner la imagen de fondo.');
+    } finally {
+      setBgBusy(false);
+    }
+  }
+
+  function removeBg() {
+    const editor = editorRef.current;
+    if (!editor) return;
+    setShowBg(false);
+    if (!clearBackground(editor)) setError('Esta pieza no tiene fondo puesto.');
+  }
+
   const safeName = (title || 'disenos').replace(/[^\w.-]+/g, '_');
 
   async function handleExport() {
@@ -457,6 +514,62 @@ export function DesignEditor() {
         <Button variant="ghost" size="sm" onClick={handleRemoveBg} disabled={removingBg}>
           {removingBg ? 'Quitando…' : '✂️ Quitar fondo'}
         </Button>
+        {/* Fondo del lienzo: color plano o imagen, detrás de todo lo demás. */}
+        <input
+          ref={bgImageRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) applyBgImage(f);
+            e.target.value = '';
+          }}
+        />
+        <div className="relative">
+          <Button variant="ghost" size="sm" onClick={openBgMenu} disabled={bgBusy}>
+            {bgBusy ? 'Aplicando…' : '🎨 Fondo ▾'}
+          </Button>
+          {showBg && (
+            <div className="absolute right-0 top-full z-30 mt-1 w-64 rounded border border-line bg-elevated p-2 shadow-lg">
+              <p className="mb-1.5 px-1 text-xs text-text-faint">Color</p>
+              <div className="mb-2 flex items-center gap-1.5 px-1">
+                <input
+                  type="color"
+                  value={bgColor}
+                  onChange={(e) => applyBgColor(e.target.value)}
+                  aria-label="Color de fondo"
+                  className="h-7 w-9 cursor-pointer rounded border border-line bg-base"
+                />
+                {BG_SWATCHES.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    title={c}
+                    aria-label={`Fondo ${c}`}
+                    onClick={() => applyBgColor(c)}
+                    style={{ backgroundColor: c }}
+                    className="h-6 w-6 rounded border border-line transition-transform hover:scale-110"
+                  />
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => bgImageRef.current?.click()}
+                className="block w-full rounded px-3 py-1.5 text-left text-sm text-text hover:bg-base"
+              >
+                🖼️ Imagen de fondo…
+              </button>
+              <button
+                type="button"
+                onClick={removeBg}
+                className="block w-full rounded px-3 py-1.5 text-left text-sm text-text-muted hover:bg-base"
+              >
+                Quitar fondo del lienzo
+              </button>
+            </div>
+          )}
+        </div>
         {/* Zoom: acercar/alejar para detallar. El % ajusta a la vista al hacer clic. */}
         <div className="flex items-center gap-0.5 rounded border border-line px-0.5">
           <Button variant="ghost" size="sm" onClick={() => editorRef.current?.zoomOut()}>
@@ -484,7 +597,10 @@ export function DesignEditor() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setShowExport((v) => !v)}
+            onClick={() => {
+              setShowBg(false);
+              setShowExport((v) => !v);
+            }}
             disabled={exporting}
           >
             {exporting ? 'Exportando…' : '⬇ Descargar ▾'}
