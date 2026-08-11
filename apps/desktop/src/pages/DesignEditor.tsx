@@ -334,6 +334,16 @@ export function DesignEditor() {
     );
   }
 
+  /**
+   * Campo de hex a mano. Existe porque el webview de Linux (WebKitGTK) no siempre abre
+   * el selector nativo de color: escribir o pegar el hex funciona en cualquier ventana.
+   */
+  function typeBgColor(raw: string) {
+    const value = raw && !raw.startsWith('#') ? `#${raw}` : raw;
+    setBgColor(value);
+    if (/^#[0-9a-fA-F]{6}$/.test(value)) applyBgColor(value);
+  }
+
   async function applyBgImage(file: File) {
     const editor = editorRef.current;
     if (!editor || !design) return;
@@ -531,15 +541,24 @@ export function DesignEditor() {
             {bgBusy ? 'Aplicando…' : '🎨 Fondo ▾'}
           </Button>
           {showBg && (
-            <div className="absolute right-0 top-full z-30 mt-1 w-64 rounded border border-line bg-elevated p-2 shadow-lg">
+            <div className="absolute right-0 top-full z-30 mt-1 w-72 rounded border border-line bg-elevated p-2 shadow-lg">
               <p className="mb-1.5 px-1 text-xs text-text-faint">Color</p>
-              <div className="mb-2 flex items-center gap-1.5 px-1">
+              <div className="mb-2 flex flex-wrap items-center gap-1.5 px-1">
                 <input
                   type="color"
                   value={bgColor}
                   onChange={(e) => applyBgColor(e.target.value)}
                   aria-label="Color de fondo"
                   className="h-7 w-9 cursor-pointer rounded border border-line bg-base"
+                />
+                <input
+                  type="text"
+                  value={bgColor}
+                  onChange={(e) => typeBgColor(e.target.value.trim())}
+                  spellCheck={false}
+                  maxLength={7}
+                  aria-label="Color de fondo en hex"
+                  className="w-[4.5rem] rounded border border-line bg-base px-1.5 py-1 font-mono text-xs text-text outline-none focus:border-gold"
                 />
                 {BG_SWATCHES.map((c) => (
                   <button
