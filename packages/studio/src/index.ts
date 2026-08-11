@@ -25,6 +25,13 @@ export {
   exportBlocksPdf,
 } from './board';
 export {
+  type StudioBackground,
+  type StudioBackgroundInput,
+  getBackground,
+  setBackground,
+  clearBackground,
+} from './background';
+export {
   traceToShapes,
   type StudioTrace,
   type StudioTraceElement,
