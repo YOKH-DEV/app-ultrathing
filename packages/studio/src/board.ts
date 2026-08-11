@@ -13,52 +13,7 @@ import {
   type TLFrameShape,
   type TLShapeId,
 } from './sdk';
-
-/** Dimensiones naturales de una imagen a partir de su dataURL (entorno navegador). */
-function naturalSize(src: string): Promise<{ w: number; h: number }> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
-    img.onerror = () => resolve({ w: 512, h: 512 });
-    img.src = src;
-  });
-}
-
-/** Lee un File/Blob como dataURL (entorno navegador). */
-function toDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result));
-    r.onerror = () => resolve('');
-    r.readAsDataURL(blob);
-  });
-}
-
-/**
- * Convierte un blob de imagen a dataURL JPEG. En el PDF esto es clave: un PNG se embebe
- * sin comprimir (un solo bloque puede pesar decenas de MB); en JPEG de alta calidad el
- * PDF baja a cientos de KB conservando nitidez para impresión. Fondo blanco (sin alpha).
- */
-function blobToJpegDataUrl(blob: Blob, quality = 0.9): Promise<string> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-      }
-      URL.revokeObjectURL(img.src);
-      resolve(ctx ? canvas.toDataURL('image/jpeg', quality) : '');
-    };
-    img.onerror = () => resolve('');
-    img.src = URL.createObjectURL(blob);
-  });
-}
+import { blobToDataUrl, naturalSize, toJpegDataUrl } from './raster';
 
 /** Los bloques (frames) del lienzo actual, en orden. */
 export function getBlocks(editor: Editor): TLFrameShape[] {
@@ -94,7 +49,7 @@ export async function addImageBlocks(editor: Editor, files: File[]): Promise<num
   let { x, y } = nextSlot(editor);
   let created = 0;
   for (const file of files) {
-    const src = await toDataUrl(file);
+    const src = await blobToDataUrl(file);
     if (!src) continue;
     const { w: natW, h: natH } = await naturalSize(src);
     const max = 800;
@@ -171,7 +126,7 @@ export async function exportBlocksPdf(editor: Editor): Promise<Blob | null> {
     const res = await editor.toImage([f.id], { format: 'png', background: true, scale: 2 });
     if (!res?.blob) continue;
     // JPEG de alta calidad: mantiene nitidez de impresión y evita PDFs de decenas de MB.
-    const dataUrl = await blobToJpegDataUrl(res.blob, 0.9);
+    const dataUrl = await toJpegDataUrl(res.blob, { quality: 0.9 });
     if (!dataUrl) continue;
     const w = Math.max(1, Math.round(f.props.w));
     const h = Math.max(1, Math.round(f.props.h));

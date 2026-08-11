@@ -7,6 +7,7 @@
  * dónde persistir; el studio solo produce/consume el snapshot.
  */
 import type { Editor, TLEditorSnapshot } from './sdk';
+import { toJpegDataUrl } from './raster';
 
 /** El documento reutilizable/portable de un diseño = snapshot de tldraw. */
 export type StudioDocument = TLEditorSnapshot;
@@ -33,31 +34,6 @@ export async function exportPng(editor: Editor): Promise<Blob | null> {
   return result?.blob ?? null;
 }
 
-/** Reduce un blob de imagen a un dataURL JPEG liviano (lado mayor = `max` px). */
-function downscaleToDataUrl(blob: Blob, max: number): Promise<string> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const scale = Math.min(1, max / Math.max(img.width, img.height));
-      const w = Math.max(1, Math.round(img.width * scale));
-      const h = Math.max(1, Math.round(img.height * scale));
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, w, h);
-        ctx.drawImage(img, 0, 0, w, h);
-      }
-      URL.revokeObjectURL(img.src);
-      resolve(ctx ? canvas.toDataURL('image/jpeg', 0.72) : '');
-    };
-    img.onerror = () => resolve('');
-    img.src = URL.createObjectURL(blob);
-  });
-}
-
 /**
  * Genera una miniatura (dataURL JPEG liviano) del diseño para la galería, así la tarjeta
  * muestra una vista previa real en vez de un cuadro vacío. Devuelve null si el lienzo
@@ -68,7 +44,7 @@ export async function exportThumbnail(editor: Editor, max = 360): Promise<string
   if (ids.length === 0) return null;
   const result = await editor.toImage(ids, { format: 'png', background: true, scale: 1 });
   if (!result?.blob) return null;
-  const dataUrl = await downscaleToDataUrl(result.blob, max);
+  const dataUrl = await toJpegDataUrl(result.blob, { max, quality: 0.72 });
   return dataUrl || null;
 }
 

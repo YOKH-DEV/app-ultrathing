@@ -3,16 +3,7 @@
  * Lo usa la generación de imágenes con IA (slice 4): prompt → imagen → al canvas.
  */
 import { AssetRecordType, createShapeId, getHashForString, type Editor, type TLShapeId } from './sdk';
-
-/** Dimensiones naturales de una imagen a partir de su dataURL (entorno navegador). */
-function naturalSize(src: string): Promise<{ w: number; h: number }> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
-    img.onerror = () => resolve({ w: 512, h: 512 });
-    img.src = src;
-  });
-}
+import { naturalSize } from './raster';
 
 /**
  * Inserta una imagen (dataURL) centrada en la vista actual, escalada a un tamaño
