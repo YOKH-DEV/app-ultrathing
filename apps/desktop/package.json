@@ -18,11 +18,9 @@
     "@ultrathing/features": "workspace:*",
     "@ultrathing/studio": "workspace:*",
     "@ultrathing/ui": "workspace:*",
-    "konva": "^10.3.0",
     "lucide-react": "^0.446.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-konva": "^19.2.5",
     "react-router-dom": "^7.18.1"
   },
   "devDependencies": {

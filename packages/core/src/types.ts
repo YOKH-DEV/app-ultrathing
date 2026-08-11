@@ -17,67 +17,14 @@ export const Job = z.object({
 });
 export type Job = z.infer<typeof Job>;
 
-/** Fondo del lienzo: color plano o imagen (dataURL en la v1). */
+/**
+ * Fondo guardado en la columna `designs.background`. Lo dejó el editor konva original;
+ * el studio guarda su fondo dentro del propio documento (un shape más del snapshot),
+ * así que hoy sólo sobrevive el tipo para no romper la firma de `updateDesign`.
+ */
 export type DesignBackground =
   | { type: 'color'; value: string }
   | { type: 'image'; value: string };
-
-/** Tipos de elemento soportados en el lienzo. */
-export type DesignElementType = 'text' | 'image' | 'shape';
-
-/** Un elemento del lienzo. `props` depende de `type`; en la Fase 1 la lista va vacía,
- * pero el tipo queda fijado para las fases 2-4 (texto/imagen/forma). */
-export interface DesignElement {
-  id: string;
-  type: DesignElementType;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  rotation: number;
-  opacity: number;
-  zIndex: number;
-  props: Record<string, unknown>;
-}
-
-/** `props` de un elemento de texto (Fase 2). Coincide con los atributos que Konva.Text
- * entiende, para volcarlos directo al nodo. */
-export interface TextElementProps {
-  text: string;
-  fontSize: number;
-  fontFamily: string;
-  fill: string;
-  /** Konva combina estilo y peso en un string: 'normal' | 'bold' | 'italic' | 'italic bold'. */
-  fontStyle: string;
-  align: 'left' | 'center' | 'right';
-}
-
-/** `props` de un elemento de imagen (Fase 3). La imagen se guarda como dataURL
- * embebido en el JSON del diseño (ver spec §5; subir a Storage es fase futura). */
-export interface ImageElementProps {
-  src: string; // dataURL "data:image/...;base64,..."
-}
-
-/** Variantes de forma soportadas (Fase 3). */
-export type ShapeVariant = 'rect' | 'circle' | 'line';
-
-/** `props` de un elemento de forma (Fase 3). `fill` se ignora en 'line'. */
-export interface ShapeElementProps {
-  variant: ShapeVariant;
-  fill: string;
-  stroke: string;
-  strokeWidth: number;
-}
-
-/** Fuentes ofrecidas en el panel de propiedades (seguras en cualquier sistema). */
-export const DESIGN_FONTS = [
-  'Inter',
-  'Arial',
-  'Georgia',
-  'Times New Roman',
-  'Courier New',
-  'Verdana',
-] as const;
 
 /** Preset de tamaño al crear un diseño. */
 export interface CanvasPreset {
