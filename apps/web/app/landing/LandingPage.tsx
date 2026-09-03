@@ -217,8 +217,9 @@ export function LandingPage() {
             <article className="rounded-[18px] border border-[var(--glass-border)] bg-[var(--glass-bg)] p-6 backdrop-blur-[var(--glass-blur)]">
               <h3 className="font-display text-lg">Motor local</h3>
               <p className="mt-2 text-sm text-[var(--text-muted)]">
-                Descargas, scraper, PDF, voz, quitar fondo y render de video piden el motor
-                en tu máquina (puerto 8787). Copy, OCR y el lienzo viven en el navegador.
+                Copy, OCR, descargas, scraper, PDF, voz, quitar fondo y el video piden el
+                motor en tu máquina (puerto 8787). El lienzo y los leads viven en el
+                navegador.
               </p>
             </article>
           </div>

@@ -33,8 +33,8 @@ export function EngineBanner() {
   if (ok !== false) return null;
   return (
     <p className="mb-4 rounded-lg border border-[var(--warning)]/40 bg-[var(--warning)]/10 px-3 py-2 text-sm text-[var(--warning)]">
-      El motor local no responde en :8787. Copy, OCR y el lienzo siguen. Descargas, scraper,
-      PDF, voz, quitar fondo y video necesitan `pnpm engine`.
+      El motor local no responde en :8787. El lienzo y los leads siguen. Copy, OCR,
+      descargas, scraper, PDF, voz, quitar fondo y video necesitan `pnpm engine`.
     </p>
   );
 }

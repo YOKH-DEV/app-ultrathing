@@ -89,7 +89,13 @@ export default function DesignGalleryPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => deleteDesign(d.id)}
+                  onClick={async () => {
+                    try {
+                      await deleteDesign(d.id);
+                    } catch {
+                      setError('No se pudo eliminar el diseño. Intentá de nuevo.');
+                    }
+                  }}
                   className="mt-2 text-xs text-text-faint transition-colors hover:text-[var(--danger)]"
                 >
                   Eliminar

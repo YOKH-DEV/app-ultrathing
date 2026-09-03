@@ -49,8 +49,31 @@ export interface DownloadHistoryItem {
 /** Escucha el progreso de un job por SSE. Devuelve una función para cancelar. */
 export function streamJob(id: string, onUpdate: (job: Job) => void): () => void {
   const es = new EventSource(`${BASE}/jobs/${id}/stream`);
-  es.onmessage = (e) => onUpdate(Job.parse(JSON.parse(e.data)));
-  return () => es.close();
+  let terminal = false;
+  const finish = (job?: Job) => {
+    if (terminal) return;
+    terminal = true;
+    es.close();
+    if (job) onUpdate(job);
+  };
+  es.onmessage = (e) => {
+    const job = Job.parse(JSON.parse(e.data));
+    onUpdate(job);
+    if (job.status === 'done' || job.status === 'error') finish();
+  };
+  es.onerror = () => {
+    finish(
+      Job.parse({
+        id,
+        module: 'unknown',
+        status: 'error',
+        progress: 0,
+        result: null,
+        error: 'Se cortó la conexión con el motor.',
+      }),
+    );
+  };
+  return () => finish();
 }
 
 /** Un objeto editable extraído por el tracer (coincide con schemas.py del motor).
