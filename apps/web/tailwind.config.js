@@ -8,5 +8,6 @@ module.exports = {
     './app/**/*.{ts,tsx}',
     '../../packages/ui/src/**/*.{ts,tsx}',
     '../../packages/features/src/**/*.{ts,tsx}',
+    '../../packages/studio/src/**/*.{ts,tsx}',
   ],
 };

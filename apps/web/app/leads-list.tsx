@@ -13,7 +13,7 @@ export function LeadsList() {
       </h2>
       {!loading && leads.length === 0 ? (
         <p className="text-sm text-text-muted">
-          Aún no hay leads. Extrae alguno desde el escritorio y aparecerá aquí al instante.
+          Todavía no hay leads. Extraé alguno desde Scraper y aparece acá al instante.
         </p>
       ) : (
         <div className="overflow-x-auto rounded border border-line">

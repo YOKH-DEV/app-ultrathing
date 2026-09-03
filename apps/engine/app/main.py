@@ -31,11 +31,14 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(title="Ultrathing Engine", lifespan=lifespan)
 
 # La UI (web/escritorio) corre en localhost; solo se permiten esos orígenes.
-# web dev :3100 · escritorio Vite :1420 · escritorio empaquetado tauri://localhost
+# web :3000 (sesión de llegada) · :3100 legado · escritorio Vite :1420 · tauri://localhost
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
         "http://localhost:3100",
+        "http://127.0.0.1:3100",
         "http://localhost:1420",
         "tauri://localhost",
     ],

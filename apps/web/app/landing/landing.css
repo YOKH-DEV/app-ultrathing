@@ -1,0 +1,131 @@
+/* Sesión de llegada UltraThing — estudio de terminado, no landing SaaS genérica.
+   Coreografía: motion-pending oculta, entrance-run anima, luego se desacopla. */
+
+.ut-landing {
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-type: cubic-bezier(0.22, 1, 0.36, 1);
+  color: var(--text);
+}
+
+@keyframes type-unmask {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+    clip-path: inset(0 0 96% 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    clip-path: inset(0);
+  }
+}
+@keyframes content-rise {
+  from {
+    opacity: 0;
+    transform: translateY(9px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes panel-settle {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.988);
+    clip-path: inset(3% round 22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    clip-path: inset(0 round 22px);
+  }
+}
+@keyframes interface-settle {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.975);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.ut-hero-title {
+  animation: type-unmask 0.78s var(--ease-type) 0.12s both;
+}
+.ut-hero-lead {
+  animation: content-rise 0.54s var(--ease-out) 0.36s both;
+}
+.ut-hero-cta {
+  animation: content-rise 0.54s var(--ease-out) 0.56s both;
+}
+.ut-piece {
+  animation: interface-settle 0.94s var(--ease-out) 0.28s both;
+}
+
+.ut-liquid {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.01);
+  background-blend-mode: luminosity;
+  backdrop-filter: blur(50px);
+  -webkit-backdrop-filter: blur(50px);
+  box-shadow:
+    4px 4px 4px rgba(0, 0, 0, 0.05),
+    inset 0 1px 1px rgba(255, 255, 255, 0.15);
+}
+.ut-liquid::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.4px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0.2) 20%,
+    rgba(255, 255, 255, 0) 40%,
+    rgba(255, 255, 255, 0) 60%,
+    rgba(255, 255, 255, 0.2) 80%,
+    rgba(255, 255, 255, 0.5) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.ut-mosaic-tile {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--glow-soft);
+  transition:
+    transform 0.45s var(--ease-out),
+    border-color 0.45s var(--ease-out),
+    box-shadow 0.45s var(--ease-out);
+}
+.ut-mosaic-tile:hover,
+.ut-mosaic-tile:focus-within {
+  transform: translateY(-4px);
+  border-color: rgba(229, 185, 78, 0.45);
+  box-shadow: var(--glow-gold);
+}
+
+.ut-landing ::selection {
+  background: rgba(229, 185, 78, 0.35);
+  color: var(--text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ut-landing * {
+    animation: none !important;
+  }
+}

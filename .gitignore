@@ -58,3 +58,6 @@ apps/engine/vertex-sa.json
 
 # Salidas de render de video
 apps/video/out/
+
+# Previews locales de motion-web (no van al repo)
+referencias/

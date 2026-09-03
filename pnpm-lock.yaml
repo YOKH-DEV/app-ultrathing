@@ -127,9 +127,15 @@ importers:
       '@ultrathing/features':
         specifier: workspace:*
         version: link:../../packages/features
+      '@ultrathing/studio':
+        specifier: workspace:*
+        version: link:../../packages/studio
       '@ultrathing/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      lucide-react:
+        specifier: ^0.446.0
+        version: 0.446.0(react@19.2.7)
       next:
         specifier: ^15.0.0
         version: 15.5.20(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -5004,13 +5010,13 @@ snapshots:
       '@remotion/timeline-utils': 4.0.498
       '@rspack/core': 1.7.11(@swc/helpers@0.5.15)
       '@rspack/plugin-react-refresh': 1.6.1(react-refresh@0.18.0)
-      css-loader: 7.1.4(@rspack/core@1.7.11(@swc/helpers@0.5.15))(webpack@5.105.0(esbuild@0.28.1)(postcss@8.5.16))
+      css-loader: 7.1.4(@rspack/core@1.7.11(@swc/helpers@0.5.15))(webpack@5.105.0(postcss@8.5.16))
       esbuild: 0.28.1
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
       react-refresh: 0.18.0
       remotion: 4.0.498(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      style-loader: 4.0.0(webpack@5.105.0(esbuild@0.28.1)(postcss@8.5.16))
+      style-loader: 4.0.0(webpack@5.105.0(postcss@8.5.16))
       webpack: 5.105.0(esbuild@0.28.1)(postcss@8.5.16)
     transitivePeerDependencies:
       - '@minify-html/node'
@@ -6150,7 +6156,7 @@ snapshots:
       utrie: 1.0.2
     optional: true
 
-  css-loader@7.1.4(@rspack/core@1.7.11(@swc/helpers@0.5.15))(webpack@5.105.0(esbuild@0.28.1)(postcss@8.5.16)):
+  css-loader@7.1.4(@rspack/core@1.7.11(@swc/helpers@0.5.15))(webpack@5.105.0(postcss@8.5.16)):
     dependencies:
       icss-utils: 5.1.0(postcss@8.5.16)
       postcss: 8.5.16
@@ -7020,7 +7026,7 @@ snapshots:
 
   strip-final-newline@2.0.0: {}
 
-  style-loader@4.0.0(webpack@5.105.0(esbuild@0.28.1)(postcss@8.5.16)):
+  style-loader@4.0.0(webpack@5.105.0(postcss@8.5.16)):
     dependencies:
       webpack: 5.105.0(esbuild@0.28.1)(postcss@8.5.16)
 
