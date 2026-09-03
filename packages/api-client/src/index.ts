@@ -10,7 +10,7 @@ export type {
   TracedElement,
   RewriteAction,
 } from './engine';
-export { signIn, signUp, signOut, useSession } from './auth';
+export { signIn, signUp, signInWithGoogle, signOut, useSession } from './auth';
 export { useLeads } from './leads';
 export type { Lead } from './leads';
 export { useDesigns, getDesign, createDesign, updateDesign, deleteDesign } from './designs';

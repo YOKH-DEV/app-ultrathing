@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import { Button } from '@ultrathing/ui';
 import { signIn, signUp, useSession } from '@ultrathing/api-client';
+import { GoogleButton } from '../landing/GoogleButton';
 
 type Mode = 'login' | 'register';
 
@@ -98,8 +99,15 @@ function AuthForm() {
               : 'Una cuenta. Diseño, copy, voz y el resto de la mesa.'}
           </p>
 
+          <div className="mt-6">
+            <GoogleButton />
+          </div>
+          <p className="my-4 text-center text-xs uppercase tracking-[0.16em] text-[var(--text-faint)]">
+            o con correo
+          </p>
+
           <form
-            className="mt-6 flex flex-col gap-3"
+            className="flex flex-col gap-3"
             onSubmit={(e) => {
               e.preventDefault();
               if (!busy && valid) submit();

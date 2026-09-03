@@ -26,6 +26,19 @@ export async function signOut(): Promise<void> {
   if (error) throw error;
 }
 
+/** Entra con Google (Gmail). Redirige al proveedor y vuelve a `/auth/callback`. */
+export async function signInWithGoogle(): Promise<void> {
+  const origin = window.location.origin;
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${origin}/auth/callback`,
+      queryParams: { prompt: 'select_account' },
+    },
+  });
+  if (error) throw error;
+}
+
 /** Sesión reactiva. La librería persiste el token; sobrevive recargas. */
 export function useSession(): { session: Session | null; loading: boolean } {
   const [session, setSession] = useState<Session | null>(null);
