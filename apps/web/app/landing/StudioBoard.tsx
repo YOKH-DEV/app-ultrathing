@@ -1,7 +1,3 @@
-'use client';
-
-import { useRef, useState } from 'react';
-
 function Tile({
   kicker,
   title,
@@ -45,23 +41,8 @@ function Preview({ kicker, title }: { kicker: string; title: string }) {
   );
 }
 
-/** Segunda sección: mosaico de herramientas + video de orbes. */
+/** Segunda sección: mosaico de herramientas + still de orbes superpuesto. */
 export function StudioBoard() {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [paused, setPaused] = useState(false);
-
-  function toggle() {
-    const v = videoRef.current;
-    if (!v) return;
-    if (v.paused) {
-      void v.play();
-      setPaused(false);
-    } else {
-      v.pause();
-      setPaused(true);
-    }
-  }
-
   return (
     <section id="herramientas" className="ut-board-wrap">
       <div id="caracteristicas" className="ut-board">
@@ -97,33 +78,8 @@ export function StudioBoard() {
           <Preview kicker="Captura" title="Descargas MP3 / MP4" />
         </div>
 
-        <div className="ut-board-film">
-          <video
-            ref={videoRef}
-            className="ut-board-video"
-            src="/hero/orbs.mp4"
-            autoPlay
-            muted
-            loop
-            playsInline
-            aria-label="UltraThing Black, orbes de oro y mármol"
-          />
-          <button
-            type="button"
-            className="ut-board-play"
-            onClick={toggle}
-            aria-label={paused ? 'Reproducir' : 'Pausar'}
-          >
-            {paused ? (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            ) : (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                <path d="M7 5h4v14H7zm6 0h4v14h-4z" />
-              </svg>
-            )}
-          </button>
+        <div className="ut-board-film" aria-hidden>
+          <img src="/hero/orbs.webp" alt="" className="ut-board-orbs" />
         </div>
       </div>
     </section>

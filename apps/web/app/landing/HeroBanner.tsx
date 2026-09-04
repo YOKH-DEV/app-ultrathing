@@ -25,7 +25,6 @@ export function HeroBanner() {
           <div className="ut-hero-links">
             <a href="#herramientas">Herramientas</a>
             <a href="#caracteristicas">Características</a>
-            <a href="#planes">Planes</a>
           </div>
           <div className="ut-hero-actions">
             <Link href="/entrar" className="ut-hero-entrar">

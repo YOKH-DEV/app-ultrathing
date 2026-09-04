@@ -1,90 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { cn } from '@ultrathing/ui';
 import { HeroBanner } from './HeroBanner';
 import { StudioBoard } from './StudioBoard';
 import { SOCIAL } from './social';
 import './landing.css';
-
-function GoldLink({
-  href,
-  children,
-  variant = 'primary',
-  size = 'md',
-  className,
-}: {
-  href: string;
-  children: React.ReactNode;
-  variant?: 'primary' | 'ghost' | 'outline';
-  size?: 'sm' | 'md' | 'lg';
-  className?: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className={cn(
-        'inline-flex items-center justify-center rounded-lg font-medium transition-all',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold',
-        variant === 'primary' &&
-          'bg-gold text-[var(--on-gold)] shadow-[var(--glow-gold)] hover:bg-gold-bright hover:shadow-[0_0_34px_rgba(229,185,78,0.5)]',
-        variant === 'ghost' && 'bg-transparent text-text hover:bg-[var(--glass-strong)]',
-        variant === 'outline' &&
-          'border border-[var(--glass-border)] bg-[var(--glass-bg)] text-text backdrop-blur-[var(--glass-blur)] hover:border-gold hover:text-gold',
-        size === 'sm' && 'h-8 px-3 text-sm',
-        size === 'md' && 'h-10 px-4 text-sm',
-        size === 'lg' && 'h-12 px-6 text-base',
-        className,
-      )}
-    >
-      {children}
-    </Link>
-  );
-}
-
-function Pricing() {
-  return (
-    <section id="planes" className="mx-auto max-w-5xl px-4 pb-24 md:px-8">
-      <h2 className="max-w-xl font-display text-[clamp(1.7rem,3vw,2.4rem)] leading-[1.05] tracking-[-0.025em]">
-        Gratis para entrar. Premium para el estudio completo.
-      </h2>
-      <p className="mt-3 max-w-xl text-[var(--text-muted)]">
-        Dos caminos. El de $10 abre UltraThing entero y UltraThing Black.
-      </p>
-      <div className="mt-10 grid items-stretch gap-4 md:grid-cols-2">
-        <article className="flex flex-col rounded-[22px] border border-[var(--glass-border)] bg-[var(--glass-bg)] p-8">
-          <h3 className="font-display text-xl">Gratis</h3>
-          <p className="mt-4 font-display text-4xl tracking-[-0.04em]">$0</p>
-          <p className="mt-1 text-sm text-[var(--text-muted)]">Para conocer el estudio y crear tu cuenta.</p>
-          <ul className="mt-8 flex flex-1 flex-col gap-2 text-sm text-text">
-            <li>Lienzo y galería de diseños</li>
-            <li>Copy, OCR y voz de prueba</li>
-            <li>Tu sesión, tus datos, con RLS</li>
-          </ul>
-          <GoldLink href="/entrar?modo=registro" className="mt-8 w-full" variant="outline">
-            Crear cuenta
-          </GoldLink>
-        </article>
-
-        <article className="ut-plan-featured relative flex flex-col overflow-hidden rounded-[22px] bg-gold p-8 text-[var(--on-gold)] shadow-[var(--glow-gold)]">
-          <h3 className="font-display text-xl">Premium</h3>
-          <p className="mt-4 font-display text-4xl tracking-[-0.04em]">
-            $10<span className="text-lg tracking-normal"> / mes</span>
-          </p>
-          <p className="mt-1 text-sm opacity-80">Todas las herramientas de UltraThing y UltraThing Black.</p>
-          <ul className="mt-8 flex flex-1 flex-col gap-2 text-sm">
-            <li>Diseño, copy, voz, OCR, descargas, PDF, scraper y leads</li>
-            <li>UltraThing Black: el motor visual de orbes y el estudio completo</li>
-            <li>Sin techo de módulos</li>
-          </ul>
-          <GoldLink href="/entrar?modo=registro" className="ut-plan-featured-cta mt-8 w-full">
-            Pasar a Premium
-          </GoldLink>
-        </article>
-      </div>
-    </section>
-  );
-}
 
 function GitHubIcon() {
   return (
@@ -120,9 +40,6 @@ function SiteFooter() {
           </a>
           <a href="#caracteristicas" className="hover:text-gold">
             Características
-          </a>
-          <a href="#planes" className="hover:text-gold">
-            Planes
           </a>
           <Link href="/entrar" className="hover:text-gold">
             Entrar
@@ -184,58 +101,6 @@ export function LandingPage() {
 
       <main>
         <StudioBoard />
-
-        <Pricing />
-
-        <section id="como" className="mx-auto max-w-6xl px-4 pb-24 md:px-8">
-          <h2 className="font-display text-[clamp(1.7rem,3vw,2.4rem)] leading-[1.05] tracking-[-0.025em]">
-            Llegás. Entrás. Trabajás.
-          </h2>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            <article className="rounded-[18px] border border-[var(--glass-border)] bg-[var(--glass-bg)] p-6 backdrop-blur-[var(--glass-blur)]">
-              <h3 className="font-display text-lg">Crear cuenta</h3>
-              <p className="mt-2 text-sm text-[var(--text-muted)]">
-                Correo y contraseña. La sesión queda en este navegador. No hay código por
-                mail en este entorno.
-              </p>
-            </article>
-            <article className="rounded-[18px] border border-[var(--glass-border)] bg-[var(--glass-bg)] p-6 backdrop-blur-[var(--glass-blur)]">
-              <h3 className="font-display text-lg">Abrir el panel</h3>
-              <p className="mt-2 text-sm text-[var(--text-muted)]">
-                Diseño, copy, voz, OCR, descargas, archivos, scraper y leads. Cada uno con
-                su ruta. Los datos van a tu fila, con RLS.
-              </p>
-            </article>
-            <article className="rounded-[18px] border border-[var(--glass-border)] bg-[var(--glass-bg)] p-6 backdrop-blur-[var(--glass-blur)]">
-              <h3 className="font-display text-lg">Motor local</h3>
-              <p className="mt-2 text-sm text-[var(--text-muted)]">
-                Copy, OCR, descargas, scraper, PDF, voz, quitar fondo y el video piden el
-                motor en tu máquina (puerto 8787). El lienzo y los leads viven en el
-                navegador.
-              </p>
-            </article>
-          </div>
-        </section>
-
-        <section className="mx-auto max-w-6xl px-4 pb-28 md:px-8">
-          <div className="ut-liquid relative overflow-hidden rounded-[28px] px-6 py-12 md:px-12 md:py-16">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-gold/20 blur-3xl"
-            />
-            <h2 className="relative max-w-xl font-display text-[clamp(1.8rem,3.4vw,2.8rem)] leading-[1.05] tracking-[-0.028em]">
-              Si la pieza todavía está en cinco pestañas, esta es la mesa.
-            </h2>
-            <div className="relative mt-8 flex flex-wrap gap-3">
-              <GoldLink href="/entrar?modo=registro" size="lg">
-                Crear cuenta
-              </GoldLink>
-              <GoldLink href="/entrar" variant="outline" size="lg">
-                Entrar
-              </GoldLink>
-            </div>
-          </div>
-        </section>
       </main>
 
       <SiteFooter />
