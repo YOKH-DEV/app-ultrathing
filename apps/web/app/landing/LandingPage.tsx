@@ -1,10 +1,88 @@
 'use client';
 
 import Link from 'next/link';
+import { cn } from '@ultrathing/ui';
 import { HeroBanner } from './HeroBanner';
 import { StudioBoard } from './StudioBoard';
 import { SOCIAL } from './social';
 import './landing.css';
+
+function GoldLink({
+  href,
+  children,
+  variant = 'primary',
+  className,
+}: {
+  href: string;
+  children: React.ReactNode;
+  variant?: 'primary' | 'outline';
+  className?: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        'inline-flex h-10 w-full items-center justify-center rounded-lg px-4 text-sm font-medium transition-all',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold',
+        variant === 'primary' &&
+          'bg-gold text-[var(--on-gold)] shadow-[var(--glow-gold)] hover:bg-gold-bright',
+        variant === 'outline' &&
+          'border border-[var(--glass-border)] bg-[var(--glass-bg)] text-text hover:border-gold hover:text-gold',
+        className,
+      )}
+    >
+      {children}
+    </Link>
+  );
+}
+
+function Pricing() {
+  return (
+    <section id="planes" className="mx-auto max-w-5xl px-4 pb-24 md:px-8">
+      <h2 className="max-w-xl font-display text-[clamp(1.7rem,3vw,2.4rem)] leading-[1.05] tracking-[-0.025em]">
+        Gratis para entrar. Premium para el estudio completo.
+      </h2>
+      <p className="mt-3 max-w-xl text-[var(--text-muted)]">
+        Dos caminos. El de $10 abre UltraThing entero y UltraThing Black.
+      </p>
+      <div className="mt-10 grid items-stretch gap-4 md:grid-cols-2">
+        <article className="flex flex-col rounded-[22px] border border-[var(--glass-border)] bg-[var(--glass-bg)] p-8">
+          <h3 className="font-display text-xl">Gratis</h3>
+          <p className="mt-4 font-display text-4xl tracking-[-0.04em]">$0</p>
+          <p className="mt-1 text-sm text-[var(--text-muted)]">
+            Para conocer el estudio y crear tu cuenta.
+          </p>
+          <ul className="mt-8 flex flex-1 flex-col gap-2 text-sm text-text">
+            <li>Lienzo y galería de diseños</li>
+            <li>Copy, OCR y voz de prueba</li>
+            <li>Tu sesión, tus datos, con RLS</li>
+          </ul>
+          <GoldLink href="/entrar?modo=registro" className="mt-8" variant="outline">
+            Crear cuenta
+          </GoldLink>
+        </article>
+
+        <article className="ut-plan-featured relative flex flex-col overflow-hidden rounded-[22px] bg-gold p-8 text-[var(--on-gold)] shadow-[var(--glow-gold)]">
+          <h3 className="font-display text-xl">Premium</h3>
+          <p className="mt-4 font-display text-4xl tracking-[-0.04em]">
+            $10<span className="text-lg tracking-normal"> / mes</span>
+          </p>
+          <p className="mt-1 text-sm opacity-80">
+            Todas las herramientas de UltraThing y UltraThing Black.
+          </p>
+          <ul className="mt-8 flex flex-1 flex-col gap-2 text-sm">
+            <li>Diseño, copy, voz, OCR, descargas, PDF, scraper y leads</li>
+            <li>UltraThing Black: el motor visual de orbes y el estudio completo</li>
+            <li>Sin techo de módulos</li>
+          </ul>
+          <GoldLink href="/entrar?modo=registro" className="ut-plan-featured-cta mt-8">
+            Pasar a Premium
+          </GoldLink>
+        </article>
+      </div>
+    </section>
+  );
+}
 
 function GitHubIcon() {
   return (
@@ -40,6 +118,9 @@ function SiteFooter() {
           </a>
           <a href="#caracteristicas" className="hover:text-gold">
             Características
+          </a>
+          <a href="#planes" className="hover:text-gold">
+            Planes
           </a>
           <Link href="/entrar" className="hover:text-gold">
             Entrar
@@ -101,6 +182,7 @@ export function LandingPage() {
 
       <main>
         <StudioBoard />
+        <Pricing />
       </main>
 
       <SiteFooter />

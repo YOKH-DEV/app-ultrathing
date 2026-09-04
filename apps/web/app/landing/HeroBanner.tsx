@@ -25,6 +25,7 @@ export function HeroBanner() {
           <div className="ut-hero-links">
             <a href="#herramientas">Herramientas</a>
             <a href="#caracteristicas">Características</a>
+            <a href="#planes">Planes</a>
           </div>
           <div className="ut-hero-actions">
             <Link href="/entrar" className="ut-hero-entrar">
@@ -56,7 +57,14 @@ export function HeroBanner() {
         </div>
 
         <nav className="ut-hero-medals" aria-label="Módulos">
-          <img src="/hero/medallions.png" alt="" className="ut-hero-medals-img" />
+          <img
+            src="/hero/medallions.png"
+            srcSet="/hero/medallions.png 1200w, /hero/medallions@2x.png 2400w"
+            sizes="(min-width: 768px) min(78vw, 1040px), calc(100vw - 1.8rem)"
+            alt=""
+            className="ut-hero-medals-img"
+            decoding="async"
+          />
           <div className="ut-hero-medals-map">
             {MEDALS.map((m) => (
               <a key={m.label} href={m.href} aria-label={m.label}>

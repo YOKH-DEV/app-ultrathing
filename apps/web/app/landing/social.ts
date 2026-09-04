@@ -1,5 +1,5 @@
-/** Links públicos del Capitán. GitHub verificado. LinkedIn: cambiar el slug si no es el perfil. */
+/** Links públicos del Capitán. GitHub y LinkedIn verificados. */
 export const SOCIAL = {
   github: 'https://github.com/YOKH-DEV',
-  linkedin: 'https://www.linkedin.com/in/yokh-dev',
+  linkedin: 'https://www.linkedin.com/in/cristian-henao-887204368/',
 } as const;
