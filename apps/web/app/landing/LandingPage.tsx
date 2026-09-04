@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { cn } from '@ultrathing/ui';
-import { PieceCanvas } from './PieceCanvas';
+import { HeroBanner } from './HeroBanner';
 import { SOCIAL } from './social';
 import './landing.css';
 
@@ -331,64 +331,10 @@ export function LandingPage() {
         }}
       />
 
-      <header className="sticky top-0 z-30 px-4 pt-4 md:px-8">
-        <nav
-          className="ut-liquid mx-auto flex max-w-6xl items-center justify-between rounded-full px-4 py-2.5 md:px-5"
-          aria-label="Principal"
-        >
-          <Link href="/" className="font-display text-lg tracking-tight text-text">
-            Ultra<span className="text-gold">thing</span>
-          </Link>
-          <div className="hidden items-center gap-6 text-sm text-[var(--text-muted)] md:flex">
-            <a href="#herramientas" className="transition-colors hover:text-gold">
-              Herramientas
-            </a>
-            <a href="#caracteristicas" className="transition-colors hover:text-gold">
-              Características
-            </a>
-            <a href="#planes" className="transition-colors hover:text-gold">
-              Planes
-            </a>
-          </div>
-          <div className="flex items-center gap-2">
-            <GoldLink href="/entrar" variant="ghost" size="sm">
-              Entrar
-            </GoldLink>
-            <GoldLink href="/entrar?modo=registro" size="sm">
-              Crear cuenta
-            </GoldLink>
-          </div>
-        </nav>
-      </header>
+      <HeroBanner />
 
       <main>
-        <section className="mx-auto grid max-w-6xl items-start gap-10 px-4 pb-20 pt-10 md:grid-cols-[1.05fr_0.95fr] md:px-8 md:pt-14">
-          <div>
-            <h1 className="ut-hero-title font-display text-[clamp(2.4rem,6vw,4.4rem)] font-semibold leading-[0.92] tracking-[-0.032em] text-text">
-              Terminá la pieza
-              <span className="block text-gold">en una sola mesa.</span>
-            </h1>
-            <p className="ut-hero-lead mt-6 max-w-[36rem] text-base leading-relaxed text-[var(--text-muted)] md:text-lg">
-              UltraThing es el estudio de marketing que corre en tu computadora. Diseñás el
-              flyer, le dictás el copy, le sacás el texto a un pantallazo, bajás el video y
-              extraés los leads. El trabajo pesado no se va a un servidor.
-            </p>
-            <div className="ut-hero-cta mt-8 flex flex-wrap items-center gap-3">
-              <GoldLink href="/entrar?modo=registro" size="lg">
-                Crear cuenta
-              </GoldLink>
-              <GoldLink href="/entrar" variant="outline" size="lg">
-                Ya tengo sesión
-              </GoldLink>
-            </div>
-            <p className="mt-4 text-xs text-[var(--text-faint)]">
-              Entrá con Google o con correo. Cada cuenta ve sólo lo suyo.
-            </p>
-          </div>
-          <PieceCanvas />
-        </section>
-
-        <section id="herramientas" className="mx-auto max-w-6xl px-4 pb-24 md:px-8">
+        <section id="herramientas" className="mx-auto max-w-6xl px-4 pb-24 pt-20 md:px-8">
           <h2 className="max-w-xl font-display text-[clamp(1.7rem,3vw,2.4rem)] leading-[1.05] tracking-[-0.025em]">
             Lo que hace, no lo que promete.
           </h2>
