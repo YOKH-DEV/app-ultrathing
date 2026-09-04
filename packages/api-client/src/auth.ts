@@ -29,14 +29,17 @@ export async function signOut(): Promise<void> {
 /** Entra con Google (Gmail). Redirige al proveedor y vuelve a `/auth/callback`. */
 export async function signInWithGoogle(): Promise<void> {
   const origin = window.location.origin;
-  const { error } = await supabase.auth.signInWithOAuth({
+  const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
       redirectTo: `${origin}/auth/callback`,
-      queryParams: { prompt: 'select_account' },
+      skipBrowserRedirect: true,
+      queryParams: { prompt: 'select_account', access_type: 'online' },
     },
   });
   if (error) throw error;
+  if (!data.url) throw new Error('Google no devolvió una URL de entrada.');
+  window.location.assign(data.url);
 }
 
 /** Sesión reactiva. La librería persiste el token; sobrevive recargas. */

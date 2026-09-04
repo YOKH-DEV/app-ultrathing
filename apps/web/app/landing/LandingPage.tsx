@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { cn } from '@ultrathing/ui';
 import { HeroBanner } from './HeroBanner';
+import { StudioBoard } from './StudioBoard';
 import { SOCIAL } from './social';
 import './landing.css';
 
@@ -41,196 +42,44 @@ function GoldLink({
   );
 }
 
-const TOOLS = [
-  {
-    id: 'diseno',
-    name: 'Diseño',
-    span: 'lg:col-span-2 lg:row-span-2',
-    body: 'Lienzo tipo estudio. Imagen → capas editables, generar pieza con IA, exportar PNG, ZIP o PDF, y renderizar video.',
-    play: 'Studio',
-  },
-  {
-    id: 'copy',
-    name: 'Copywriter',
-    span: '',
-    body: 'Brief, tono y formato. El texto sale listo para pegar en la pieza.',
-    play: 'IA de texto',
-  },
-  {
-    id: 'voz',
-    name: 'Voz a texto',
-    span: '',
-    body: 'Dictás. Whisper transcribe en tu máquina. El pulido de ortografía es opcional.',
-    play: 'Micrófono',
-  },
-  {
-    id: 'ocr',
-    name: 'Imagen a texto',
-    span: '',
-    body: 'Pegá un pantallazo. Gemini lee lo que Tesseract se come: flechas, emojis, carteles.',
-    play: 'OCR',
-  },
-  {
-    id: 'descargas',
-    name: 'Descargas',
-    span: '',
-    body: 'URL in, MP3 o MP4 out. El archivo queda en tu disco, no en un bucket ajeno.',
-    play: 'yt-dlp',
-  },
-  {
-    id: 'scraper',
-    name: 'Scraper + leads',
-    span: 'lg:col-span-2',
-    body: 'Playwright abre el directorio, extrae nombre / mail / teléfono y lo espeja a tu cuenta por Realtime.',
-    play: 'Leads en vivo',
-  },
-  {
-    id: 'archivos',
-    name: 'Archivos',
-    span: 'lg:col-span-2',
-    body: 'PDF con tablas → CSV. Sirve para listados que todavía viven en un informe.',
-    play: 'PDF → CSV',
-  },
-] as const;
-
-const FEATURES = [
-  {
-    id: 'diseno',
-    title: 'El lienzo es el documento.',
-    body: 'Subís una imagen, la partís en capas y editás el texto encima. Generás una pieza desde un brief, exportás PNG, ZIP o PDF, y el mismo tablero se puede renderizar a video.',
-    points: ['Imagen → editable', 'Generar pieza con IA', 'Export PNG / ZIP / PDF', 'Preview y render de video'],
-    stage: 'Studio',
-  },
-  {
-    id: 'intel',
-    title: 'La IA entra a la pieza, no a un chat.',
-    body: 'Copy, OCR y voz viven al lado del lienzo. Dictás un párrafo, pegás un pantallazo o reescribís un titular sin saltar de app.',
-    points: ['Copywriter por brief y tono', 'OCR con visión (Gemini)', 'Voz a texto en tu máquina', 'Acciones de texto sobre el canvas'],
-    stage: 'Inteligencia',
-  },
-  {
-    id: 'captura',
-    title: 'Lo que está afuera, entra a tu mesa.',
-    body: 'Bajás el video, convertís el PDF, extraés leads de un directorio. El resultado queda en tu disco y, si hay sesión, en tu fila de Supabase.',
-    points: ['Descargas MP3 / MP4', 'PDF con tablas → CSV', 'Scraper con Playwright', 'Leads en vivo por Realtime'],
-    stage: 'Captura',
-  },
-] as const;
-
-function FeatureSessions() {
-  return (
-    <section id="caracteristicas" className="mx-auto max-w-6xl px-4 pb-24 md:px-8">
-      <h2 className="max-w-xl font-display text-[clamp(1.7rem,3vw,2.4rem)] leading-[1.05] tracking-[-0.025em]">
-        Tres sesiones. Una mesa.
-      </h2>
-      <p className="mt-3 max-w-xl text-[var(--text-muted)]">
-        No es un menú de apps. Es el mismo estudio visto de frente, de lado y desde la calle.
-      </p>
-      <div className="mt-10 flex flex-col gap-4">
-        {FEATURES.map((feat, i) => (
-          <article
-            key={feat.id}
-            className={`ut-session grid items-stretch overflow-hidden rounded-[22px] border border-[var(--glass-border)] bg-[var(--glass-bg)] md:grid-cols-2 ${
-              i === 1 ? 'md:[&>div:first-child]:order-2' : ''
-            }`}
-          >
-            <div className="flex flex-col justify-between p-7 md:p-10">
-              <div>
-                <p className="font-display text-[11px] font-semibold uppercase tracking-[0.18em] text-gold">
-                  {feat.stage}
-                </p>
-                <h3 className="mt-3 font-display text-[clamp(1.5rem,2.4vw,2rem)] leading-[1.1] tracking-[-0.03em]">
-                  {feat.title}
-                </h3>
-                <p className="mt-3 max-w-md text-sm leading-relaxed text-[var(--text-muted)]">{feat.body}</p>
-              </div>
-              <ul className="mt-8 grid gap-2 text-sm text-text sm:grid-cols-2">
-                {feat.points.map((p) => (
-                  <li key={p} className="flex items-start gap-2">
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
-                    {p}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div
-              className="relative min-h-[220px] overflow-hidden border-t border-[var(--glass-border)] md:border-l md:border-t-0"
-              style={{
-                background: `
-                  radial-gradient(420px 260px at ${i === 1 ? '80%' : '20%'} 20%, rgba(229,185,78,0.18), transparent 60%),
-                  #111113
-                `,
-              }}
-            >
-              <div className="absolute inset-6 rounded-2xl border border-[var(--glass-border)] bg-black/30 p-5 backdrop-blur-sm">
-                <p className="font-display text-xs uppercase tracking-[0.16em] text-gold">{feat.stage}</p>
-                <p className="mt-6 font-display text-2xl leading-tight tracking-[-0.03em] text-text">{feat.points[0]}</p>
-                <div className="mt-8 h-1.5 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full w-2/3 rounded-full bg-gold" />
-                </div>
-                <p className="mt-3 text-xs text-[var(--text-faint)]">Listo para guardar en tu cuenta.</p>
-              </div>
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function Pricing() {
   return (
-    <section id="planes" className="mx-auto max-w-6xl px-4 pb-24 md:px-8">
+    <section id="planes" className="mx-auto max-w-5xl px-4 pb-24 md:px-8">
       <h2 className="max-w-xl font-display text-[clamp(1.7rem,3vw,2.4rem)] leading-[1.05] tracking-[-0.025em]">
-        Entrá gratis. El cobro, cuando lo publiques.
+        Gratis para entrar. Premium para el estudio completo.
       </h2>
       <p className="mt-3 max-w-xl text-[var(--text-muted)]">
-        Hoy el estudio corre en tu máquina, sin factura. Los planes marcan cómo se parte el producto el día que cobre.
+        Dos caminos. El de $10 abre UltraThing entero y UltraThing Black.
       </p>
-      <div className="mt-10 grid items-stretch gap-4 lg:grid-cols-3">
-        <article className="flex flex-col rounded-[22px] border border-[var(--glass-border)] bg-[var(--glass-bg)] p-7">
-          <h3 className="font-display text-xl">Libre</h3>
+      <div className="mt-10 grid items-stretch gap-4 md:grid-cols-2">
+        <article className="flex flex-col rounded-[22px] border border-[var(--glass-border)] bg-[var(--glass-bg)] p-8">
+          <h3 className="font-display text-xl">Gratis</h3>
           <p className="mt-4 font-display text-4xl tracking-[-0.04em]">$0</p>
-          <p className="mt-1 text-sm text-[var(--text-muted)]">Una persona. Todo lo que ya corre.</p>
+          <p className="mt-1 text-sm text-[var(--text-muted)]">Para conocer el estudio y crear tu cuenta.</p>
           <ul className="mt-8 flex flex-1 flex-col gap-2 text-sm text-text">
-            <li>Lienzo, copy, OCR, voz</li>
-            <li>Descargas, PDF, scraper, leads</li>
-            <li>Datos con RLS, en tu fila</li>
+            <li>Lienzo y galería de diseños</li>
+            <li>Copy, OCR y voz de prueba</li>
+            <li>Tu sesión, tus datos, con RLS</li>
           </ul>
           <GoldLink href="/entrar?modo=registro" className="mt-8 w-full" variant="outline">
             Crear cuenta
           </GoldLink>
         </article>
 
-        <article className="ut-plan-featured relative flex flex-col overflow-hidden rounded-[22px] bg-gold p-7 text-[var(--on-gold)] shadow-[var(--glow-gold)]">
-          <h3 className="font-display text-xl">Estudio</h3>
-          <p className="mt-4 font-display text-4xl tracking-[-0.04em]">$0 ahora</p>
-          <p className="mt-1 text-sm opacity-80">El plan de quien vive en el lienzo. Cuando cobre, este es.</p>
+        <article className="ut-plan-featured relative flex flex-col overflow-hidden rounded-[22px] bg-gold p-8 text-[var(--on-gold)] shadow-[var(--glow-gold)]">
+          <h3 className="font-display text-xl">Premium</h3>
+          <p className="mt-4 font-display text-4xl tracking-[-0.04em]">
+            $10<span className="text-lg tracking-normal"> / mes</span>
+          </p>
+          <p className="mt-1 text-sm opacity-80">Todas las herramientas de UltraThing y UltraThing Black.</p>
           <ul className="mt-8 flex flex-1 flex-col gap-2 text-sm">
-            <li>Todo Libre</li>
-            <li>Plantillas y panel IA integrados</li>
-            <li>Prioridad en el motor local</li>
+            <li>Diseño, copy, voz, OCR, descargas, PDF, scraper y leads</li>
+            <li>UltraThing Black: el motor visual de orbes y el estudio completo</li>
+            <li>Sin techo de módulos</li>
           </ul>
           <GoldLink href="/entrar?modo=registro" className="ut-plan-featured-cta mt-8 w-full">
-            Empezar en Estudio
+            Pasar a Premium
           </GoldLink>
-        </article>
-
-        <article className="flex flex-col rounded-[22px] border border-[var(--glass-border)] bg-[var(--glass-bg)] p-7">
-          <h3 className="font-display text-xl">Casa</h3>
-          <p className="mt-4 font-display text-4xl tracking-[-0.04em]">A medida</p>
-          <p className="mt-1 text-sm text-[var(--text-muted)]">Varias personas. Cada una, su fila.</p>
-          <ul className="mt-8 flex flex-1 flex-col gap-2 text-sm text-text">
-            <li>Cuentas por miembro</li>
-            <li>Leads y diseños separados por RLS</li>
-            <li>Hablamos el alcance</li>
-          </ul>
-          <a
-            href={SOCIAL.github}
-            className="mt-8 inline-flex h-10 items-center justify-center rounded-lg border border-[var(--glass-border)] text-sm font-medium text-text transition-colors hover:border-gold hover:text-gold"
-          >
-            Escribime por GitHub
-          </a>
         </article>
       </div>
     </section>
@@ -334,38 +183,7 @@ export function LandingPage() {
       <HeroBanner />
 
       <main>
-        <section id="herramientas" className="mx-auto max-w-6xl px-4 pb-24 pt-20 md:px-8">
-          <h2 className="max-w-xl font-display text-[clamp(1.7rem,3vw,2.4rem)] leading-[1.05] tracking-[-0.025em]">
-            Lo que hace, no lo que promete.
-          </h2>
-          <p className="mt-3 max-w-xl text-[var(--text-muted)]">
-            Ocho herramientas. La misma sesión. El Studio es el centro; el resto alimenta la
-            pieza o el listado.
-          </p>
-
-          <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:grid-rows-3">
-            {TOOLS.map((tool) => (
-              <article
-                key={tool.id}
-                className={`ut-mosaic-tile flex min-h-[11rem] flex-col justify-between p-5 ${tool.span} ${
-                  tool.id === 'diseno' ? 'min-h-[22rem] bg-gold/[0.06]' : ''
-                }`}
-              >
-                <div>
-                  <p className="font-display text-xl text-text">{tool.name}</p>
-                  <p className="mt-2 text-sm leading-relaxed text-[var(--text-muted)]">
-                    {tool.body}
-                  </p>
-                </div>
-                <p className="mt-6 text-[11px] font-medium uppercase tracking-[0.16em] text-gold">
-                  {tool.play}
-                </p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <FeatureSessions />
+        <StudioBoard />
 
         <Pricing />
 
