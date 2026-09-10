@@ -22,20 +22,42 @@ export function useDesigns(): { designs: DesignSummary[]; loading: boolean } {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+      if (!userId) {
+        if (!cancelled) {
+          setDesigns([]);
+          setLoading(false);
+        }
+        return;
+      }
       const { data } = await supabase
         .from('designs')
         .select(GALLERY_COLUMNS)
+        .eq('user_id', userId)
         .order('updated_at', { ascending: false });
-      setDesigns(data ?? []);
-      setLoading(false);
+      if (!cancelled) {
+        setDesigns(data ?? []);
+        setLoading(false);
+      }
     }
-    load();
+
+    void load();
+    const { data: auth } = supabase.auth.onAuthStateChange(() => {
+      void load();
+    });
     const channel = supabase
       .channel('designs-live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'designs' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'designs' }, () => {
+        void load();
+      })
       .subscribe();
     return () => {
+      cancelled = true;
+      auth.subscription.unsubscribe();
       supabase.removeChannel(channel);
     };
   }, []);
