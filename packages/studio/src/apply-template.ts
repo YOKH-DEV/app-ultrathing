@@ -73,6 +73,16 @@ function layout(kind: TemplateKind, w: number, h: number): StudioTraceElement[] 
         text(m, Math.round(h * 0.32), w - m * 2, Math.round(h * 0.16), 'Título de la pieza', '#f5efe0', 700),
         text(m, Math.round(h * 0.52), w - m * 2, Math.round(h * 0.08), 'Una línea que explique el valor', '#d4af37', 400),
       ];
+    case 'flyer':
+      return [
+        rect(0, 0, w, h, '#f5efe0'),
+        rect(0, 0, w, Math.round(h * 0.28), '#111111'),
+        text(m, Math.round(h * 0.08), w - m * 2, Math.round(h * 0.12), 'EVENTO', '#d4af37', 700),
+        text(m, Math.round(h * 0.34), w - m * 2, Math.round(h * 0.1), 'Nombre del evento', '#111111', 700),
+        text(m, Math.round(h * 0.48), w - m * 2, Math.round(h * 0.06), 'Fecha · hora · lugar', '#8a7a5c', 400),
+        rect(m, h - m - Math.round(h * 0.1), w - m * 2, Math.round(h * 0.1), '#d4af37'),
+        text(m, h - m - Math.round(h * 0.1), w - m * 2, Math.round(h * 0.1), 'Reservá tu lugar', '#111111', 700),
+      ];
     default:
       return [];
   }

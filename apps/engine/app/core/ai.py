@@ -129,11 +129,11 @@ def _vertex_enabled() -> bool:
 
 
 def _vertex_project(creds_info: dict[str, Any] | None = None) -> str:
-    """Proyecto GCP: el de la env si está, si no el que trae el propio service account."""
-    if settings.vertex_project:
-        return settings.vertex_project
+    """Proyecto GCP. Si hay JSON de modelo activo, manda ese project_id (no el del .env)."""
     if creds_info and creds_info.get("project_id"):
         return str(creds_info["project_id"])
+    if settings.vertex_project:
+        return settings.vertex_project
     return getattr(_vertex_creds, "project_id", "") or ""
 
 

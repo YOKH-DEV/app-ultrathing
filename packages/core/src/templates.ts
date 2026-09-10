@@ -39,13 +39,13 @@ export const CANVAS_PRESETS: CanvasPreset[] = [
   { id: 'cover-hd', name: 'Cover 16:9 (1920×1080)', width: 1920, height: 1080, category: 'video' },
   { id: 'slide-16-9', name: 'Diapositiva 16:9 (1920×1080)', width: 1920, height: 1080, category: 'presentacion' },
   { id: 'a4', name: 'A4 (2480×3508)', width: 2480, height: 3508, category: 'imprimir' },
-  { id: 'flyer', name: 'Flyer (1080×1920)', width: 1080, height: 1920, category: 'imprimir' },
+  { id: 'flyer', name: 'Flyer A5 (1748×2480)', width: 1748, height: 2480, category: 'imprimir' },
   { id: 'infografia', name: 'Infografía (1080×1920)', width: 1080, height: 1920, category: 'educacion' },
   { id: 'ficha', name: 'Ficha (1080×1080)', width: 1080, height: 1080, category: 'educacion' },
 ];
 
 /** Receta visual que el studio monta al usar la plantilla. `blank` = lienzo vacío. */
-export type TemplateKind = 'blank' | 'promo' | 'quote' | 'story' | 'thumb' | 'hero';
+export type TemplateKind = 'blank' | 'promo' | 'quote' | 'story' | 'thumb' | 'hero' | 'flyer';
 
 export interface DesignTemplate {
   id: string;
@@ -67,7 +67,7 @@ export const DESIGN_TEMPLATES: DesignTemplate[] = [
   { id: 'video-cover', title: 'Cover 16:9', category: 'video', presetId: 'cover-hd', kind: 'hero', swatch: '#111111' },
   { id: 'pres-hero', title: 'Portada de charla', category: 'presentacion', presetId: 'slide-16-9', kind: 'hero', swatch: '#d4af37' },
   { id: 'print-a4', title: 'Hoja A4', category: 'imprimir', presetId: 'a4', kind: 'blank', swatch: '#ffffff' },
-  { id: 'print-flyer', title: 'Flyer vertical', category: 'imprimir', presetId: 'flyer', kind: 'story', swatch: '#d4af37' },
+  { id: 'print-flyer', title: 'Flyer vertical', category: 'imprimir', presetId: 'flyer', kind: 'flyer', swatch: '#d4af37' },
   { id: 'edu-info', title: 'Infografía', category: 'educacion', presetId: 'infografia', kind: 'story', swatch: '#0f172a' },
   { id: 'edu-ficha', title: 'Ficha cuadrada', category: 'educacion', presetId: 'ficha', kind: 'promo', swatch: '#f5efe0' },
 ];

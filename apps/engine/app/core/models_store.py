@@ -37,7 +37,9 @@ def _save(data: dict[str, Any]) -> None:
     tmp = _path() + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+    os.chmod(tmp, 0o600)
     os.replace(tmp, _path())
+    os.chmod(_path(), 0o600)
 
 
 def _hint(key: str | None) -> str | None:
@@ -104,19 +106,33 @@ def upsert(body: dict[str, Any]) -> dict[str, Any]:
     if not model_name:
         raise ValueError("falta el nombre del modelo")
 
+    new_url = (body.get("base_url") or "").strip() or None
+    old_url = (existing or {}).get("base_url")
+    host_changed = bool(
+        existing
+        and new_url
+        and old_url
+        and str(new_url).rstrip("/") != str(old_url).rstrip("/")
+    )
+    incoming_key = body.get("api_key")
+    has_new_key = (
+        isinstance(incoming_key, str) and incoming_key.strip() and not incoming_key.startswith("•")
+    )
+    if host_changed and not has_new_key:
+        raise ValueError("cambiaste la URL: pegá de nuevo la API key")
+
     row: dict[str, Any] = {
         "id": mid,
         "name": (body.get("name") or "modelo").strip(),
         "kind": kind,
         "model": model_name,
-        "base_url": (body.get("base_url") or "").strip() or None,
+        "base_url": new_url,
         "project": (body.get("project") or "").strip() or None,
         "location": (body.get("location") or "global").strip() or "global",
-        "api_key": (existing or {}).get("api_key"),
+        "api_key": None if host_changed else (existing or {}).get("api_key"),
         "credentials": (existing or {}).get("credentials"),
     }
-    incoming_key = body.get("api_key")
-    if isinstance(incoming_key, str) and incoming_key.strip() and not incoming_key.startswith("•"):
+    if has_new_key:
         row["api_key"] = incoming_key.strip()
     creds = body.get("credentials")
     if isinstance(creds, dict) and creds:
@@ -150,11 +166,24 @@ def remove(model_id: str) -> None:
 
 
 def merge_for_test(body: dict[str, Any]) -> dict[str, Any]:
-    """Arma un modelo crudo para probar, rellenando keys previas si el form viene vacío."""
+    """Arma un modelo crudo para probar, rellenando keys previas si el form viene vacío.
+
+    Si cambia `base_url` respecto al guardado, NO reusa la key (evita mandarla a otro host).
+    """
     mid = body.get("id")
     base = get_raw(str(mid)) if mid else None
+    new_url = (body.get("base_url") or "").strip() or None
+    old_url = (base or {}).get("base_url")
+    host_changed = bool(
+        base and new_url and old_url and str(new_url).rstrip("/") != str(old_url).rstrip("/")
+    )
     merged = dict(base or {})
     merged.update({k: v for k, v in body.items() if v not in (None, "", [])})
-    if isinstance(body.get("api_key"), str) and body["api_key"].startswith("•"):
+    incoming = body.get("api_key")
+    if host_changed:
+        if not (isinstance(incoming, str) and incoming.strip() and not incoming.startswith("•")):
+            raise ValueError("cambiaste la URL: pegá de nuevo la API key")
+        merged["api_key"] = incoming.strip()
+    elif isinstance(incoming, str) and incoming.startswith("•"):
         merged["api_key"] = (base or {}).get("api_key")
     return merged
