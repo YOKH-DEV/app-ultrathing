@@ -23,6 +23,7 @@ export function HeroBanner() {
             ULTRATHING
           </Link>
           <div className="ut-hero-links">
+            <a href="#download">Download</a>
             <a href="#herramientas">Herramientas</a>
             <a href="#caracteristicas">Características</a>
             <a href="#planes">Planes</a>

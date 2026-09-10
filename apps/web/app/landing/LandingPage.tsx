@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { cn } from '@ultrathing/ui';
 import { HeroBanner } from './HeroBanner';
+import { DownloadSection } from './DownloadSection';
 import { StudioBoard } from './StudioBoard';
 import { SOCIAL } from './social';
 import './landing.css';
@@ -113,6 +114,9 @@ function SiteFooter() {
           </p>
         </div>
         <nav className="flex flex-col gap-2 text-sm text-[var(--text-muted)]" aria-label="Pie">
+          <a href="#download" className="hover:text-gold">
+            Download
+          </a>
           <a href="#herramientas" className="hover:text-gold">
             Herramientas
           </a>
@@ -181,6 +185,7 @@ export function LandingPage() {
       <HeroBanner />
 
       <main>
+        <DownloadSection />
         <StudioBoard />
         <Pricing />
       </main>
