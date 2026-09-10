@@ -11,21 +11,43 @@ export default function AuthCallbackPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const err = params.get('error_description') ?? params.get('error');
-    const code = params.get('code');
-    if (err) {
-      setError(err);
-      return;
+    let cancelled = false;
+
+    async function finish() {
+      const params = new URLSearchParams(window.location.search);
+      const err = params.get('error_description') ?? params.get('error');
+      const code = params.get('code');
+      if (err) {
+        if (!cancelled) setError(err);
+        return;
+      }
+      if (!code) {
+        router.replace('/entrar');
+        return;
+      }
+
+      const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+      if (cancelled) return;
+      if (data.session) {
+        router.replace('/app');
+        return;
+      }
+
+      // Strict Mode / doble montaje: el primer exchange ya gastó el verifier
+      // y dejó la sesión en localStorage. Si existe, entramos igual.
+      const { data: existing } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (existing.session) {
+        router.replace('/app');
+        return;
+      }
+      setError(exchangeError?.message ?? 'No se pudo entrar con Google.');
     }
-    if (!code) {
-      router.replace('/entrar');
-      return;
-    }
-    supabase.auth.exchangeCodeForSession(code).then(({ error: exchangeError }) => {
-      if (exchangeError) setError(exchangeError.message);
-      else router.replace('/app');
-    });
+
+    void finish();
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   return (
