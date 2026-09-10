@@ -220,6 +220,9 @@ importers:
       '@ultrathing/ui':
         specifier: workspace:*
         version: link:../ui
+      lucide-react:
+        specifier: ^0.446.0
+        version: 0.446.0(react@19.2.7)
       react:
         specifier: ^19.0.0
         version: 19.2.7
@@ -239,6 +242,9 @@ importers:
       '@tldraw/tlschema':
         specifier: 5.2.5
         version: 5.2.5(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@ultrathing/core':
+        specifier: workspace:*
+        version: link:../core
       '@ultrathing/ui':
         specifier: workspace:*
         version: link:../ui

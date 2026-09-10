@@ -128,6 +128,38 @@ export type RewriteAction =
 export type DownloadFormat = 'mp4' | 'mp3';
 export type DownloadQuality = 'mejor' | '2160' | '1440' | '1080' | '720';
 
+/** Un modelo de IA configurado en esta máquina (`~/Ultrathing/models.json`). */
+export interface AiModel {
+  id: string;
+  name: string;
+  kind: 'openai' | 'vertex';
+  model: string;
+  base_url?: string | null;
+  has_key?: boolean;
+  key_hint?: string | null;
+  project?: string | null;
+  location?: string | null;
+  has_credentials?: boolean;
+}
+
+export interface AiModelInput {
+  id?: string;
+  name: string;
+  kind: 'openai' | 'vertex';
+  model: string;
+  base_url?: string;
+  api_key?: string;
+  project?: string;
+  location?: string;
+  credentials?: Record<string, unknown>;
+}
+
+export interface AiModelsState {
+  active_id: string | null;
+  models: AiModel[];
+  fallback: { zai: boolean; vertex: boolean };
+}
+
 /** Cliente tipado del motor. Lo usan el escritorio y la web (el copywriter es surface: both). */
 export const engineClient = {
   downloader: {
@@ -204,6 +236,14 @@ export const engineClient = {
     // Genera una imagen desde un prompt (Gemini en Vertex). Devuelve dataURL PNG.
     generate: (prompt: string) =>
       post<{ image: string }>('/modules/imagegen/generate', { prompt }),
+  },
+  models: {
+    list: () => request<AiModelsState>('/modules/models', 'GET'),
+    save: (body: AiModelInput) => post<AiModel>('/modules/models', body),
+    activate: (id: string) => post<{ status: string }>(`/modules/models/${id}/activate`, {}),
+    remove: (id: string) => request<{ status: string }>(`/modules/models/${id}`, 'DELETE'),
+    test: (body: AiModelInput) =>
+      post<{ ok: boolean; preview?: string; error?: string }>('/modules/models/test', body),
   },
   voz: {
     // Sube audio WAV (Web Audio). `cleanup=false` salta el pulido IA (trozos en vivo).

@@ -9,6 +9,9 @@ export type {
   TraceResult,
   TracedElement,
   RewriteAction,
+  AiModel,
+  AiModelInput,
+  AiModelsState,
 } from './engine';
 export { signIn, signUp, signInWithGoogle, signOut, useSession } from './auth';
 export { useLeads } from './leads';

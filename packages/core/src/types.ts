@@ -26,18 +26,4 @@ export type DesignBackground =
   | { type: 'color'; value: string }
   | { type: 'image'; value: string };
 
-/** Preset de tamaño al crear un diseño. */
-export interface CanvasPreset {
-  id: string;
-  name: string;
-  width: number;
-  height: number;
-}
 
-/** Formatos de redes para "Nuevo diseño". */
-export const CANVAS_PRESETS: CanvasPreset[] = [
-  { id: 'ig-post', name: 'Post Instagram (1080×1080)', width: 1080, height: 1080 },
-  { id: 'ig-story', name: 'Historia (1080×1920)', width: 1080, height: 1920 },
-  { id: 'fb-post', name: 'Post Facebook (1200×630)', width: 1200, height: 630 },
-  { id: 'yt-thumb', name: 'Miniatura YouTube (1280×720)', width: 1280, height: 720 },
-];

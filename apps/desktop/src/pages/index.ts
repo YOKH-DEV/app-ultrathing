@@ -5,6 +5,7 @@ import { FilesPage } from './FilesPage';
 import { ScraperPage } from './ScraperPage';
 import { LeadsPage } from './LeadsPage';
 import { DesignGallery } from './DesignGallery';
+import { ModelosPage } from './ModelosPage';
 
 /**
  * Páginas de módulos ya construidos, indexadas por `route`.
@@ -20,4 +21,5 @@ export const pageByRoute: Record<string, ComponentType> = {
   '/voz': VoiceToTextPanel,
   '/ocr': OcrPanel,
   '/diseno': DesignGallery,
+  '/modelos': ModelosPage,
 };

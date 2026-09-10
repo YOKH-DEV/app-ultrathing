@@ -1,4 +1,4 @@
-import { Download, FileText, Search, PenLine, Users, Mic, ScanText, Palette } from 'lucide-react';
+import { Download, FileText, Search, PenLine, Users, Mic, ScanText, Palette, Cpu } from 'lucide-react';
 import { registerFeature } from '@ultrathing/core';
 
 /** Registro web. El orden define la nav del panel. */
@@ -65,4 +65,12 @@ registerFeature({
   icon: ScanText,
   surface: 'web',
   route: '/app/ocr',
+});
+registerFeature({
+  id: 'modelos',
+  name: 'Modelos IA',
+  description: 'Conectá cualquier modelo (API o JSON).',
+  icon: Cpu,
+  surface: 'web',
+  route: '/app/modelos',
 });

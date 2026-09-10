@@ -36,6 +36,7 @@ export {
   type StudioTrace,
   type StudioTraceElement,
 } from './tracing';
+export { applyDesignTemplate } from './apply-template';
 export {
   ultraShapesPlugin,
   UltraBoxUtil,

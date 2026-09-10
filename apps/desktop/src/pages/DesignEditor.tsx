@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '@ultrathing/ui';
 import {
   getDesign,
@@ -30,6 +30,7 @@ import {
   exportBlocksPdf,
   canvasToTrace,
   VideoPreview,
+  applyDesignTemplate,
 } from '@ultrathing/studio';
 import type { Editor, TLEditorSnapshot, TLImageShape } from '@ultrathing/studio/sdk';
 import type { StudioTrace } from '@ultrathing/studio';
@@ -56,6 +57,9 @@ const AI_ACTIONS: { action: RewriteAction; label: string }[] = [
 export function DesignEditor() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const templateId = searchParams.get('tpl');
+  const appliedTemplate = useRef(false);
   const [design, setDesign] = useState<Design | null>(null);
   const [title, setTitle] = useState('');
   const [snapshot, setSnapshot] = useState<TLEditorSnapshot | null>(null);
@@ -101,6 +105,15 @@ export function DesignEditor() {
       if (!d) setError('No se pudo cargar el diseño (¿sin sesión o no existe?).');
     });
   }, [id]);
+
+  useEffect(() => {
+    const ed = editorRef.current;
+    if (!ed || !design || !templateId || appliedTemplate.current) return;
+    if (isStudioDocument(design.elements)) return;
+    appliedTemplate.current = true;
+    applyDesignTemplate(ed, templateId, design.width, design.height);
+    navigate(`/diseno/${design.id}`, { replace: true });
+  }, [editor, design, templateId, navigate]);
 
   // Autosave del documento (lo dispara el Studio, debounced).
   const handleSave = useCallback(
