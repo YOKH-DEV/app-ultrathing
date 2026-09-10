@@ -5,6 +5,7 @@ import { Button, Card } from '@ultrathing/ui';
 import {
   engineClient,
   streamJob,
+  useSession,
   type DownloadFormat,
   type DownloadHistoryItem,
   type DownloadQuality,
@@ -24,6 +25,7 @@ const selectClass =
 type Phase = 'idle' | 'downloading' | 'processing' | 'done' | 'error';
 
 export default function DescargasPage() {
+  const { session } = useSession();
   const [url, setUrl] = useState('');
   const [format, setFormat] = useState<DownloadFormat>('mp4');
   const [quality, setQuality] = useState<DownloadQuality>('mejor');
@@ -43,7 +45,7 @@ export default function DescargasPage() {
 
   useEffect(() => {
     void refreshHistory();
-  }, []);
+  }, [session?.user.id]);
 
   async function handleDownload() {
     setPhase('downloading');

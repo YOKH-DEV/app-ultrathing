@@ -12,15 +12,30 @@ from .service import download
 router = APIRouter(prefix="/modules/downloader", tags=["downloader"])
 
 
+def _user_id(authorization: str | None) -> str | None:
+    token = authorization.removeprefix("Bearer ").strip() if authorization else None
+    if not token:
+        return None
+    try:
+        return user_id_from_token(token)
+    except Exception:  # noqa: BLE001 — sin sesión no hay historial, no 500
+        return None
+
+
 @router.get("/history")
-async def get_history() -> list[HistoryItem]:
-    """Historial local de descargas (funciona sin login)."""
-    return [HistoryItem(**item) for item in history.read()]
+async def get_history(authorization: str | None = Header(default=None)) -> list[HistoryItem]:
+    """Historial del usuario autenticado. Sin token: lista vacía (no el de otros)."""
+    user_id = _user_id(authorization)
+    if not user_id:
+        return []
+    return [HistoryItem(**item) for item in history.read(user_id)]
 
 
 @router.delete("/history")
-async def clear_history() -> dict[str, str]:
-    history.clear()
+async def clear_history(authorization: str | None = Header(default=None)) -> dict[str, str]:
+    user_id = _user_id(authorization)
+    if user_id:
+        history.clear(user_id)
     return {"status": "ok"}
 
 

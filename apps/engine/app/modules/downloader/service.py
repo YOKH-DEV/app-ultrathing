@@ -60,6 +60,7 @@ def _download(
     quality: Quality,
     dest: str | None,
     on_progress: Callable[[float], None],
+    user_id: str | None = None,
 ) -> DownloadResult:
     def hook(d: dict[str, Any]) -> None:
         if d["status"] == "downloading":
@@ -82,15 +83,17 @@ def _download(
             platform=info.get("extractor_key") or "",
             duration=int(duration) if duration else None,
         )
-    history.add(
-        {
-            "title": result.title,
-            "platform": result.platform,
-            "format": format,
-            "ext": result.ext,
-            "duration": result.duration,
-        }
-    )
+    if user_id:
+        history.add(
+            user_id,
+            {
+                "title": result.title,
+                "platform": result.platform,
+                "format": format,
+                "ext": result.ext,
+                "duration": result.duration,
+            },
+        )
     return result
 
 
@@ -111,7 +114,7 @@ async def download(
 
     Si hay usuario, persiste la fila en `downloads` a su nombre (autenticado con su token).
     """
-    result = await asyncio.to_thread(_download, url, format, quality, dest, report)
+    result = await asyncio.to_thread(_download, url, format, quality, dest, report, user_id)
     if user_id and token:
         await asyncio.to_thread(_persist, token, user_id, result)
     return result.model_dump()

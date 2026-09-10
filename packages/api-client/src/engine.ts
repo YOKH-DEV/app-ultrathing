@@ -31,7 +31,11 @@ async function postForm<T>(path: string, form: FormData): Promise<T> {
 }
 
 async function request<T>(path: string, method: 'GET' | 'DELETE'): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, { method });
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(`${BASE}${path}`, { method, headers });
   if (!res.ok) throw new Error(`Engine ${res.status}`);
   return res.json() as Promise<T>;
 }
