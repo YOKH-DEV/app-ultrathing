@@ -59,13 +59,13 @@ export function DownloadSection() {
         <div className="ut-dl-copy">
           <h2 className="ut-dl-title">Download</h2>
           <p className="ut-dl-lead">
-            El motor corre en tu PC. Instalalo y el estudio queda en el escritorio:
-            Windows, Linux o Mac.
+            No hay plan que activar. Instalalo gratis y dejá el estudio en tu escritorio: Windows,
+            Linux o macOS. El motor corre en tu PC.
           </p>
         </div>
 
         <div className="ut-dl-picker" role="tablist" aria-label="Sistema">
-          {(Object.values(DESKTOP_BUILDS) as typeof DESKTOP_BUILDS.windows[]).map((b) => {
+          {(Object.values(DESKTOP_BUILDS) as (typeof DESKTOP_BUILDS.windows)[]).map((b) => {
             const Icon = MARK[b.id];
             const on = b.id === os;
             return (
@@ -105,7 +105,7 @@ export function DownloadSection() {
         </div>
 
         <p className="ut-dl-note">
-          Versión {DESKTOP_VERSION} · si el archivo no está,{' '}
+          Open source bajo Apache 2.0 · versión {DESKTOP_VERSION} · si el archivo no está,{' '}
           <a href={RELEASES_PAGE} rel="noreferrer">
             abrí las versiones
           </a>
