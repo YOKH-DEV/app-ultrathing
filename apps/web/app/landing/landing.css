@@ -297,6 +297,10 @@
   background: rgba(229, 185, 78, 0.35);
   color: var(--text);
 }
+.ut-landing :is(a, button):focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 4px;
+}
 
 .ut-board-wrap {
   padding: 1.75rem 0 5rem;
@@ -593,18 +597,132 @@
   text-decoration: underline;
 }
 
-.ut-plan-featured .ut-plan-featured-cta {
-  background: var(--bg-base);
-  color: var(--gold);
-  box-shadow: none;
+/* —— Comunidad (manifiesto, no tabla de precios) —— */
+.ut-community {
+  scroll-margin-top: 5.5rem;
+  padding: 5rem 1rem 6.5rem;
+  background: #0a0a0b;
 }
-.ut-plan-featured .ut-plan-featured-cta:hover {
-  background: #161618;
-  color: var(--gold-bright);
+.ut-community-inner {
+  max-width: 72rem;
+  margin: 0 auto;
+}
+.ut-community-heading {
+  display: grid;
+  gap: 1rem;
+  max-width: 57rem;
+}
+.ut-community-label {
+  color: var(--gold);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.ut-community-heading h2 {
+  max-width: 54rem;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 4.4rem);
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+  color: #f4f1ea;
+}
+.ut-community-heading > p:last-child {
+  max-width: 42rem;
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  line-height: 1.65;
+  color: var(--text-muted);
+}
+.ut-community-principles {
+  margin: 3.75rem 0 0;
+  padding: 0;
+  border-top: 1px solid var(--glass-border);
+  list-style: none;
+}
+.ut-community-principles li {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr;
+  gap: 1rem;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--glass-border);
+}
+.ut-community-principles li > span {
+  padding-top: 0.2rem;
+  color: var(--gold);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+}
+.ut-community-principles h3 {
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 2vw, 1.45rem);
+  line-height: 1.25;
+  color: #f4f1ea;
+}
+.ut-community-principles p {
+  max-width: 40rem;
+  margin-top: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.94rem;
+  line-height: 1.55;
+}
+.ut-community-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 2.5rem;
+}
+.ut-community-primary,
+.ut-community-secondary {
+  display: inline-flex;
+  min-height: 3rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.75rem 1.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease;
+}
+.ut-community-primary {
+  background: var(--gold);
+  color: var(--on-gold);
+}
+.ut-community-primary:hover {
+  background: var(--gold-bright);
+}
+.ut-community-secondary {
+  border: 1px solid var(--glass-border);
+  color: #f4f1ea;
+}
+.ut-community-secondary:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+@media (min-width: 768px) {
+  .ut-community {
+    padding: 7rem 1.75rem 8rem;
+  }
+  .ut-community-principles li {
+    grid-template-columns: 3rem minmax(15rem, 0.8fr) 1fr;
+    align-items: baseline;
+    gap: 1.5rem;
+    padding: 1.8rem 0;
+  }
+  .ut-community-principles li > div {
+    display: contents;
+  }
+  .ut-community-principles p {
+    margin-top: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .ut-landing * {
     animation: none !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }
