@@ -1,8 +1,7 @@
 const CALLBACK_PROTOCOL = 'com.ultrathing.desktop:';
 const CALLBACK_HOST = 'auth';
 const CALLBACK_PATH = '/callback';
-
-const TOKEN_PARAMETER = /(^|_)token($|_)/i;
+const ALLOWED_PARAMETERS = new Set(['code', 'error', 'error_code', 'error_description']);
 
 export type DesktopOAuthCallback =
   | { kind: 'code'; code: string }
@@ -28,28 +27,44 @@ export function parseDesktopOAuthCallback(rawUrl: string): DesktopOAuthCallback 
     throw new Error('UltraThing rechazó un callback de Google no permitido.');
   }
 
-  if (url.hash !== '' || [...url.searchParams.keys()].some((key) => TOKEN_PARAMETER.test(key))) {
+  if (url.hash !== '') {
     throw new Error('UltraThing rechazó un callback que exponía credenciales.');
   }
 
-  const oauthErrors = url.searchParams.getAll('error');
-  if (oauthErrors.length > 1) {
-    throw new Error('UltraThing recibió una respuesta ambigua de Google.');
+  const parameterCounts = new Map<string, number>();
+  for (const key of url.searchParams.keys()) {
+    if (!ALLOWED_PARAMETERS.has(key)) {
+      throw new Error('UltraThing rechazó un parámetro de callback no permitido.');
+    }
+    const count = (parameterCounts.get(key) ?? 0) + 1;
+    if (count > 1) {
+      throw new Error('UltraThing recibió una respuesta ambigua de Google.');
+    }
+    parameterCounts.set(key, count);
   }
-  if (oauthErrors.length === 1) {
+
+  const oauthError = url.searchParams.get('error');
+  const code = url.searchParams.get('code');
+  if (oauthError !== null) {
+    if (code !== null) {
+      throw new Error('UltraThing recibió una respuesta ambigua de Google.');
+    }
     return {
       kind: 'error',
       message:
-        oauthErrors[0] === 'access_denied'
+        oauthError === 'access_denied'
           ? 'Cancelaste el acceso con Google.'
           : 'Google no pudo completar el acceso. Intentá de nuevo.',
     };
   }
 
-  const codes = url.searchParams.getAll('code');
-  if (codes.length !== 1 || !codes[0]?.trim()) {
+  if (url.searchParams.has('error_code') || url.searchParams.has('error_description')) {
+    throw new Error('UltraThing recibió una respuesta ambigua de Google.');
+  }
+
+  if (!code?.trim()) {
     throw new Error('El callback de Google no contiene un código válido.');
   }
 
-  return { kind: 'code', code: codes[0] };
+  return { kind: 'code', code };
 }
