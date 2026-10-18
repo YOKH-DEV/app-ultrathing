@@ -36,6 +36,43 @@ def insert_download(token: str, user_id: str, title: str, filepath: str, ext: st
     ).execute()
 
 
+def insert_asset(
+    token: str, user_id: str, module: str, title: str, filepath: str, kind: str
+) -> None:
+    """Inserta un asset producido por un módulo (imagen, csv, …) a nombre del usuario."""
+    _client_as(token).table("assets").insert(
+        {
+            "user_id": user_id,
+            "module": module,
+            "title": title,
+            "filepath": filepath,
+            "kind": kind,
+        }
+    ).execute()
+
+
+def insert_lead(
+    token: str,
+    user_id: str,
+    source: str,
+    name: str | None,
+    phone: str | None,
+    email: str | None,
+    meta: dict[str, Any],
+) -> None:
+    """Inserta un lead extraído (módulo scraper) a nombre del usuario dueño del token."""
+    _client_as(token).table("leads").insert(
+        {
+            "user_id": user_id,
+            "source": source,
+            "name": name,
+            "phone": phone,
+            "email": email,
+            "meta": meta,
+        }
+    ).execute()
+
+
 def upsert_job(
     token: str,
     job_id: str,

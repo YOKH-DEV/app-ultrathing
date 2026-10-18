@@ -16,3 +16,12 @@ export const Job = z.object({
   error: z.string().nullable(),
 });
 export type Job = z.infer<typeof Job>;
+
+/**
+ * Fondo guardado en la columna `designs.background`. Lo dejó el editor konva original;
+ * el studio guarda su fondo dentro del propio documento (un shape más del snapshot),
+ * así que hoy sólo sobrevive el tipo para no romper la firma de `updateDesign`.
+ */
+export type DesignBackground =
+  | { type: 'color'; value: string }
+  | { type: 'image'; value: string };

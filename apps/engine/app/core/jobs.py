@@ -3,7 +3,7 @@ import asyncio
 import json
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from typing import Any
 
 from app.core.supabase import upsert_job
@@ -19,14 +19,21 @@ class Job:
     progress: float = 0.0
     result: Any | None = None
     error: str | None = None
-    _queue: asyncio.Queue = field(default_factory=asyncio.Queue, repr=False)
+    # La cola transporta snapshots (dict) en cada progreso y `None` como centinela de fin.
+    _queue: asyncio.Queue[dict[str, Any] | None] = field(default_factory=asyncio.Queue, repr=False)
 
     def snapshot(self) -> dict[str, Any]:
-        d = asdict(self)
-        d.pop("_queue")
-        d.pop("user_id")  # el contrato del stream no expone el dueño
-        d.pop("token")
-        return d
+        # Se arma explícito (no con asdict): asdict hace deepcopy de todos los campos,
+        # y `_queue` puede tener un getter Future pendiente (consumidor SSE esperando)
+        # que no es copiable → "cannot pickle Future". No se exponen user_id ni token.
+        return {
+            "id": self.id,
+            "module": self.module,
+            "status": self.status,
+            "progress": self.progress,
+            "result": self.result,
+            "error": self.error,
+        }
 
 
 # Firma de un handler: recibe el job y una función para reportar progreso.

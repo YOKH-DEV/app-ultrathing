@@ -1,5 +1,5 @@
 /* Ultrathing — tema negro / dorado. Fuente de verdad del color. */
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
   /* Fondos: negro profundo con capas */
@@ -31,6 +31,67 @@
   --font-display: 'Space Grotesk', sans-serif;  /* títulos, techy */
   --font-sans:    'Inter', sans-serif;           /* cuerpo, moderno */
   --radius:       12px;
+
+  /* Glassmorphism futurista: paneles translúcidos con brillo y desenfoque */
+  --glass-bg:     rgba(255,255,255,0.035);
+  --glass-strong: rgba(255,255,255,0.06);
+  --glass-border: rgba(255,255,255,0.10);
+  --glass-blur:   16px;
+  --glow-gold:    0 0 28px rgba(229,185,78,0.28);
+  --glow-soft:    0 8px 32px rgba(0,0,0,0.45);
 }
 
-body { background: var(--bg-base); color: var(--text); font-family: var(--font-sans); }
+/* Fondo con profundidad: halos sutiles (dorado + azul frío) sobre el negro base,
+   como las pantallas futuristas de la referencia. Fijo para que no scrollee. */
+body {
+  background:
+    radial-gradient(1100px 620px at 12% -12%, rgba(229,185,78,0.07), transparent 58%),
+    radial-gradient(1000px 720px at 108% 4%, rgba(70,110,200,0.06), transparent 55%),
+    radial-gradient(900px 900px at 50% 120%, rgba(229,185,78,0.04), transparent 60%),
+    var(--bg-base);
+  background-attachment: fixed;
+  color: var(--text);
+  font-family: var(--font-sans);
+  /* Render tipográfico nítido y con kerning fino (Inter luce mucho mejor así). */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'ss01';
+  letter-spacing: -0.006em;
+  line-height: 1.55;
+}
+
+/* Jerarquía tipográfica global: títulos en la display techy (Space Grotesk), ajustados
+   y con buen interlineado. Da orden y aire a toda la app sin tocar cada componente. */
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.021em;
+  line-height: 1.16;
+  color: var(--text);
+}
+h1 { font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.15rem); }
+h2 { font-size: clamp(1.3rem, 1.05rem + 0.9vw, 1.6rem); }
+h3 { font-size: 1.12rem; }
+
+/* Etiquetas de sección/paneles (PROPIEDADES, CAPAS, etc.): pequeñas, en mayúsculas y
+   espaciadas — el sello "premium/futurista" de la referencia. */
+.ut-eyebrow {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+p, span, a, button, input, textarea, select, label, li {
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+
+/* Selectores de opciones: dorado con letra negra (como los botones dorados), para
+   que se lean siempre y combinen con la marca. Cubre el control y su popup nativo. */
+select option {
+  background-color: var(--gold);
+  color: var(--on-gold);
+}

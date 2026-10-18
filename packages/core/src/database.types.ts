@@ -129,6 +129,53 @@ export type Database = {
           },
         ];
       };
+      designs: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          width: number;
+          height: number;
+          background: Json;
+          elements: Json;
+          thumbnail: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title?: string;
+          width: number;
+          height: number;
+          background?: Json;
+          elements?: Json;
+          thumbnail?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          title?: string;
+          width?: number;
+          height?: number;
+          background?: Json;
+          elements?: Json;
+          thumbnail?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'designs_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<never, never>;
     Functions: Record<never, never>;
