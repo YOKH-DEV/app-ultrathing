@@ -27,7 +27,7 @@ export function GoogleButton({ label = 'Continuar con Google' }: { label?: strin
       const raw = e instanceof Error ? e.message : 'No se pudo abrir Google.';
       setError(
         /provider|Unsupported|disabled/i.test(raw)
-          ? 'Google todavía no está habilitado en este proyecto. Entrá con correo mientras tanto.'
+          ? 'El acceso con Google no está disponible. Intentá de nuevo en unos minutos.'
           : raw,
       );
       setBusy(false);

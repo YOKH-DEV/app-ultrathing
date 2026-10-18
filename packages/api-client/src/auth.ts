@@ -2,23 +2,8 @@ import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
-/** Inicia sesión con correo y contraseña. Abre la sesión si las credenciales son válidas. */
-export async function signIn(email: string, password: string): Promise<void> {
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw error;
-}
-
-/**
- * Crea una cuenta con correo y contraseña.
- * Devuelve `true` si la sesión quedó abierta al instante (confirmación de correo
- * desactivada en Supabase), o `false` si el proyecto exige confirmar el correo
- * antes de poder entrar — en ese caso el usuario existe pero aún no hay sesión.
- */
-export async function signUp(email: string, password: string): Promise<boolean> {
-  const { data, error } = await supabase.auth.signUp({ email, password });
-  if (error) throw error;
-  return Boolean(data.session);
-}
+const SUPABASE_AUTH_ORIGIN = 'https://vgtwylbmefujgvhsgrre.supabase.co';
+const SUPABASE_AUTHORIZE_PATH = '/auth/v1/authorize';
 
 /** Cierra la sesión actual. */
 export async function signOut(): Promise<void> {
@@ -26,20 +11,55 @@ export async function signOut(): Promise<void> {
   if (error) throw error;
 }
 
-/** Entra con Google (Gmail). Redirige al proveedor y vuelve a `/auth/callback`. */
-export async function signInWithGoogle(): Promise<void> {
-  const origin = window.location.origin;
+/** Prepara PKCE y devuelve únicamente la URL de autorización validada de Supabase. */
+export async function prepareGoogleOAuth(redirectTo: string): Promise<string> {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${origin}/auth/callback`,
+      redirectTo,
       skipBrowserRedirect: true,
       queryParams: { prompt: 'select_account', access_type: 'online' },
     },
   });
   if (error) throw error;
   if (!data.url) throw new Error('Google no devolvió una URL de entrada.');
-  window.location.assign(data.url);
+
+  let authorizeUrl: URL;
+  try {
+    authorizeUrl = new URL(data.url);
+  } catch {
+    throw new Error('Google devolvió una URL de entrada inválida.');
+  }
+
+  if (
+    authorizeUrl.protocol !== 'https:' ||
+    authorizeUrl.origin !== SUPABASE_AUTH_ORIGIN ||
+    authorizeUrl.pathname !== SUPABASE_AUTHORIZE_PATH ||
+    authorizeUrl.username !== '' ||
+    authorizeUrl.password !== '' ||
+    authorizeUrl.hash !== ''
+  ) {
+    throw new Error('Supabase devolvió un destino de autorización no permitido.');
+  }
+
+  return authorizeUrl.toString();
+}
+
+/** Entra con Google en la web y vuelve a `/auth/callback`. */
+export async function signInWithGoogle(): Promise<void> {
+  if (typeof window === 'undefined') {
+    throw new Error('El acceso con Google requiere un navegador.');
+  }
+  const authorizeUrl = await prepareGoogleOAuth(`${window.location.origin}/auth/callback`);
+  window.location.assign(authorizeUrl);
+}
+
+/** Intercambia el código PKCE y deja la sesión persistida sin exponer sus tokens. */
+export async function exchangeGoogleOAuthCode(code: string): Promise<void> {
+  if (!code.trim()) throw new Error('El callback de Google no contiene un código válido.');
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+  if (error) throw error;
+  if (!data.session) throw new Error('Google no devolvió una sesión válida.');
 }
 
 /** Sesión reactiva. La librería persiste el token; sobrevive recargas. */

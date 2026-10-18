@@ -3,6 +3,7 @@ import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { featuresFor } from '@ultrathing/core';
 import { useSession, type Session } from '@ultrathing/api-client';
 import { LoginScreen } from './auth/LoginScreen';
+import { useDesktopGoogleOAuth } from './auth/useDesktopGoogleOAuth';
 import { Layout } from './shell/Layout';
 import { ComingSoon } from './pages/ComingSoon';
 import { pageByRoute } from './pages';
@@ -18,6 +19,7 @@ const DesignEditor = lazy(() =>
 const SKIP_AUTH_DURING_DEV = false;
 
 export default function App() {
+  const googleOAuth = useDesktopGoogleOAuth();
   const { session, loading } = useSession();
 
   if (loading && !SKIP_AUTH_DURING_DEV) {
@@ -27,7 +29,7 @@ export default function App() {
       </main>
     );
   }
-  if (!session && !SKIP_AUTH_DURING_DEV) return <LoginScreen />;
+  if (!session && !SKIP_AUTH_DURING_DEV) return <LoginScreen {...googleOAuth} />;
   return <Shell session={session} />;
 }
 

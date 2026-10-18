@@ -1,115 +1,40 @@
-import { useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
-import { Button, Card } from '@ultrathing/ui';
-import { signIn, signUp } from '@ultrathing/api-client';
+import { Card } from '@ultrathing/ui';
+import type { DesktopGoogleOAuth } from './useDesktopGoogleOAuth';
 
-type Mode = 'login' | 'register';
+function GoogleMark() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+      <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z" />
+      <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.33A9 9 0 0 0 9 18z" />
+      <path fill="#FBBC05" d="M3.96 10.71A5.41 5.41 0 0 1 3.68 9c0-.6.1-1.17.28-1.71V4.96H.96A9 9 0 0 0 0 9c0 1.45.35 2.82.96 4.04l3-2.33z" />
+      <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.34l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.96l3 2.33C4.67 5.16 6.66 3.58 9 3.58z" />
+    </svg>
+  );
+}
 
-/** Acceso por correo y contraseña: entrar a una cuenta o crear una nueva. */
-export function LoginScreen() {
-  const [mode, setMode] = useState<Mode>('login');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-
-  async function submit() {
-    setBusy(true);
-    setError(null);
-    setNotice(null);
-    try {
-      if (mode === 'login') {
-        await signIn(email.trim(), password);
-        // onAuthStateChange actualiza la sesión y el shell cambia solo.
-      } else {
-        const active = await signUp(email.trim(), password);
-        if (!active) {
-          // Supabase exige confirmar el correo: la cuenta existe pero aún no hay sesión.
-          setNotice('Cuenta creada. Revisa tu correo para confirmarla y luego entra.');
-          setMode('login');
-        }
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo completar la operación.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const input =
-    'h-10 w-full rounded border border-line bg-elevated px-3 text-sm text-text outline-none focus:border-gold';
-  const valid = email.includes('@') && password.length >= 6;
-
+/** Acceso único con Google. Supabase crea la cuenta en el primer ingreso. */
+export function LoginScreen({ start, busy, error }: DesktopGoogleOAuth) {
   return (
     <main className="grid min-h-screen place-items-center bg-base p-8">
       <Card className="w-full max-w-sm">
         <h1 className="mb-1 font-display text-2xl text-text">
           Ultra<span className="text-gold">thing</span>
         </h1>
-        <p className="mb-5 text-sm text-text-muted">
-          {mode === 'login' ? 'Entra con tu cuenta.' : 'Crea tu cuenta para empezar.'}
-        </p>
-
-        <form
-          className="flex flex-col gap-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!busy && valid) submit();
-          }}
-        >
-          <input
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="tucorreo@ejemplo.com"
-            className={input}
-          />
-          <div className="relative">
-            <input
-              type={showPassword ? 'text' : 'password'}
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Contraseña (mín. 6 caracteres)"
-              className={`${input} pr-10`}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-              className="absolute inset-y-0 right-0 grid w-10 place-items-center text-text-muted transition-colors hover:text-gold"
-            >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
-          </div>
-          <Button type="submit" disabled={busy || !valid}>
-            {busy
-              ? mode === 'login'
-                ? 'Entrando…'
-                : 'Creando…'
-              : mode === 'login'
-                ? 'Entrar'
-                : 'Crear cuenta'}
-          </Button>
-        </form>
+        <p className="mb-5 text-sm text-text-muted">Accedé de forma segura con tu cuenta de Google.</p>
 
         <button
           type="button"
-          onClick={() => {
-            setMode(mode === 'login' ? 'register' : 'login');
-            setError(null);
-            setNotice(null);
-          }}
+          onClick={() => void start()}
           disabled={busy}
-          className="mt-4 text-sm text-text-muted transition-colors hover:text-gold"
+          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-line bg-elevated text-sm font-medium text-text transition-colors hover:border-gold hover:text-gold disabled:opacity-40"
         >
-          {mode === 'login' ? '¿No tienes cuenta? Crear una' : '¿Ya tienes cuenta? Entrar'}
+          <GoogleMark />
+          {busy ? 'Abriendo Google…' : 'Entrar con Google'}
         </button>
 
-        {notice && <p className="mt-3 text-sm text-gold">{notice}</p>}
+        <p className="mt-4 text-xs leading-relaxed text-text-faint">
+          Si es tu primera vez, Google creará tu cuenta de UltraThing automáticamente.
+        </p>
         {error && <p className="mt-3 text-sm text-[var(--danger)]">{error}</p>}
       </Card>
     </main>
