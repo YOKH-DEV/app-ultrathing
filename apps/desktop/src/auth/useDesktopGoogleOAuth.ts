@@ -104,9 +104,8 @@ export function useDesktopGoogleOAuth(): DesktopGoogleOAuth {
     } catch (startError) {
       if (mountedRef.current && operationRef.current === operation) {
         setError(readableError(startError));
+        setBusyState(false);
       }
-    } finally {
-      if (mountedRef.current && operationRef.current === operation) setBusyState(false);
     }
   }, [setBusyState]);
 
