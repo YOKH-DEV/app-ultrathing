@@ -39,7 +39,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
             Ultra<span className="text-gold">thing</span>
           </h1>
           <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.18em] text-gold opacity-80">
-            Studio · Premium
+            Studio · Open source
           </p>
         </div>
 
