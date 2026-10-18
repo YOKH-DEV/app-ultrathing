@@ -26,7 +26,7 @@ export function HeroBanner() {
             <a href="#download">Download</a>
             <a href="#herramientas">Herramientas</a>
             <a href="#caracteristicas">Características</a>
-            <a href="#planes">Planes</a>
+            <a href="#comunidad">Comunidad</a>
           </div>
           <div className="ut-hero-actions">
             <Link href="/entrar" className="ut-hero-entrar">
@@ -40,21 +40,17 @@ export function HeroBanner() {
       </header>
 
       <section className="ut-hero-stage">
-        <img
-          src="/hero/angels.jpg"
-          alt=""
-          className="ut-hero-angels"
-        />
+        <img src="/hero/angels.jpg" alt="" className="ut-hero-angels" />
 
         <div className="ut-hero-copy">
           <h1 className="ut-hero-title">ULTRATHING</h1>
           <p className="ut-hero-lead">
-            Herramientas poderosas de diseño y marketing en un solo lugar, potenciando tus
-            habilidades y desempeño
+            Diseñá, automatizá y terminá proyectos sin pagar otra suscripción. Es gratis, open
+            source y mejora con quienes deciden construirlo.
           </p>
-          <Link href="/entrar?modo=registro" className="ut-hero-iniciar">
-            INICIAR
-          </Link>
+          <a href="#download" className="ut-hero-iniciar">
+            DESCARGAR GRATIS
+          </a>
         </div>
 
         <nav className="ut-hero-medals" aria-label="Módulos">

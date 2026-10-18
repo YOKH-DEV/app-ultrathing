@@ -3,9 +3,9 @@ import type { ReactNode } from 'react';
 import { Providers } from './providers';
 
 export const metadata = {
-  title: 'UltraThing — el estudio donde se termina la pieza',
+  title: 'UltraThing — estudio open source para crear sin suscripciones',
   description:
-    'Diseño, copy, voz, OCR, descargas y leads en una sola mesa. El trabajo pesado corre en tu computadora.',
+    'Diseñá, automatizá y terminá proyectos gratis. Conectá tus modelos de IA y ayudá a mejorar un estudio open source construido en comunidad.',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
