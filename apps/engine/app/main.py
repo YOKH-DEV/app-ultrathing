@@ -4,9 +4,9 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
+from app.core.cors import ALLOWED_ORIGINS, PrivateNetworkCORSMiddleware
 from app.core.jobs import get_job, stream_job
 from app.core.registry import discover_routers
 
@@ -30,20 +30,14 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="Ultrathing Engine", lifespan=lifespan)
 
-# La UI (web/escritorio) corre en localhost; solo se permiten esos orígenes.
-# web :3000 (sesión de llegada) · :3100 legado · escritorio Vite :1420 · tauri://localhost
+# La web oficial accede al motor loopback del cliente mediante Private Network Access.
+# Cualquier preflight PNA debe superar la misma allowlist exacta; nunca se permite "*".
 app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:3100",
-        "http://127.0.0.1:3100",
-        "http://localhost:1420",
-        "tauri://localhost",
-    ],
+    PrivateNetworkCORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_private_network=True,
 )
 
 

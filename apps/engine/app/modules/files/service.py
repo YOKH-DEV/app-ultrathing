@@ -17,20 +17,41 @@ from .schemas import PdfToCsvResult
 # Estrategia por texto: agrupa por alineación de palabras cuando la tabla no tiene
 # rayas. Es el respaldo para tablas sin bordes (que la detección por líneas no ve).
 _TEXT_TABLE_SETTINGS = {"vertical_strategy": "text", "horizontal_strategy": "text"}
+Table = list[list[str | None]]
 
 
-def _page_tables(page: Any) -> list[list[list[Any]]]:
-    """Detecta tablas priorizando las líneas de borde (lo más preciso). Si la página
-    no expone rayas que delimiten la tabla, reintenta con la estrategia por texto,
-    así también captura tablas sin bordes en vez de darlas por inexistentes."""
-    tables = page.extract_tables()
-    if not tables:
-        tables = page.extract_tables(_TEXT_TABLE_SETTINGS)
+def _normalize_tables(raw: object) -> list[Table]:
+    """Descarta formas inválidas y normaliza celdas inesperadas sin asumir stubs externos."""
+    if not isinstance(raw, list):
+        return []
+    tables: list[Table] = []
+    for candidate in raw:
+        if not isinstance(candidate, list):
+            continue
+        table: Table = []
+        for candidate_row in candidate:
+            if not isinstance(candidate_row, list):
+                continue
+            table.append(
+                [cell if isinstance(cell, str) or cell is None else str(cell) for cell in candidate_row]
+            )
+        if table:
+            tables.append(table)
     return tables
 
 
+def _page_tables(page: Any) -> list[Table]:
+    """Detecta tablas priorizando las líneas de borde (lo más preciso). Si la página
+    no expone rayas que delimiten la tabla, reintenta con la estrategia por texto,
+    así también captura tablas sin bordes en vez de darlas por inexistentes."""
+    raw: object = page.extract_tables()
+    if not raw:
+        raw = page.extract_tables(_TEXT_TABLE_SETTINGS)
+    return _normalize_tables(raw)
+
+
 def _pdf_to_csv(data: bytes, filename: str, on_progress: Callable[[float], None]) -> PdfToCsvResult:
-    rows: list[list[Any]] = []
+    rows: Table = []
     tables = 0
     with pdfplumber.open(io.BytesIO(data)) as pdf:
         total = len(pdf.pages) or 1
@@ -43,7 +64,7 @@ def _pdf_to_csv(data: bytes, filename: str, on_progress: Callable[[float], None]
     # La estrategia por texto suele intercalar filas vacías (los huecos verticales de
     # la tabla): se descartan para no ensuciar el CSV. Una fila es vacía si todas sus
     # celdas son None o quedan en blanco al recortar.
-    rows = [r for r in rows if any((c or "").strip() for c in r)]
+    rows = [row for row in rows if any((cell or "").strip() for cell in row)]
 
     if not rows:
         raise ValueError("El PDF no contiene tablas detectables.")

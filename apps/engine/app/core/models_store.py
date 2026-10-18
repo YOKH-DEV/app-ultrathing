@@ -22,12 +22,22 @@ def _path() -> str:
 def _load() -> dict[str, Any]:
     try:
         with open(_path(), encoding="utf-8") as f:
-            data = json.load(f)
-        if not isinstance(data, dict):
+            raw: object = json.load(f)
+        if not isinstance(raw, dict):
             return {"active_id": None, "models": []}
-        data.setdefault("active_id", None)
-        data.setdefault("models", [])
-        return data
+        active_id = raw.get("active_id")
+        raw_models = raw.get("models")
+        models: list[dict[str, Any]] = []
+        if isinstance(raw_models, list):
+            for candidate in raw_models:
+                if isinstance(candidate, dict):
+                    models.append(
+                        {key: value for key, value in candidate.items() if isinstance(key, str)}
+                    )
+        return {
+            "active_id": active_id if isinstance(active_id, str) else None,
+            "models": models,
+        }
     except (FileNotFoundError, json.JSONDecodeError):
         return {"active_id": None, "models": []}
 
@@ -80,9 +90,13 @@ def list_state() -> dict[str, Any]:
 
 def get_raw(model_id: str) -> dict[str, Any] | None:
     data = _load()
-    for m in data.get("models", []):
-        if m.get("id") == model_id:
-            return m
+    models = data.get("models")
+    if not isinstance(models, list):
+        return None
+    for candidate in models:
+        if not isinstance(candidate, dict) or candidate.get("id") != model_id:
+            continue
+        return {key: value for key, value in candidate.items() if isinstance(key, str)}
     return None
 
 
@@ -115,10 +129,14 @@ def upsert(body: dict[str, Any]) -> dict[str, Any]:
         and str(new_url).rstrip("/") != str(old_url).rstrip("/")
     )
     incoming_key = body.get("api_key")
-    has_new_key = (
-        isinstance(incoming_key, str) and incoming_key.strip() and not incoming_key.startswith("•")
+    new_key = (
+        incoming_key.strip()
+        if isinstance(incoming_key, str)
+        and incoming_key.strip()
+        and not incoming_key.startswith("•")
+        else None
     )
-    if host_changed and not has_new_key:
+    if host_changed and not new_key:
         raise ValueError("cambiaste la URL: pegá de nuevo la API key")
 
     row: dict[str, Any] = {
@@ -132,8 +150,8 @@ def upsert(body: dict[str, Any]) -> dict[str, Any]:
         "api_key": None if host_changed else (existing or {}).get("api_key"),
         "credentials": (existing or {}).get("credentials"),
     }
-    if has_new_key:
-        row["api_key"] = incoming_key.strip()
+    if new_key:
+        row["api_key"] = new_key
     creds = body.get("credentials")
     if isinstance(creds, dict) and creds:
         row["credentials"] = creds
