@@ -13,7 +13,7 @@ function GoogleMark() {
 }
 
 /** Acceso único con Google. Supabase crea la cuenta en el primer ingreso. */
-export function LoginScreen({ start, cancel, busy, error }: DesktopGoogleOAuth) {
+export function LoginScreen({ start, cancel, busy, phase, error }: DesktopGoogleOAuth) {
   return (
     <main className="grid min-h-screen place-items-center bg-base p-8">
       <Card className="w-full max-w-sm">
@@ -25,15 +25,17 @@ export function LoginScreen({ start, cancel, busy, error }: DesktopGoogleOAuth) 
         {busy ? (
           <div className="space-y-3">
             <p role="status" aria-live="polite" className="text-center text-sm text-text-muted">
-              Esperando a Google…
+              {phase === 'exchanging' ? 'Completando acceso…' : 'Esperando a Google…'}
             </p>
-            <button
-              type="button"
-              onClick={cancel}
-              className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-line bg-transparent text-sm font-medium text-text-muted transition-colors hover:border-gold hover:text-gold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
-            >
-              Cancelar y volver a intentar
-            </button>
+            {phase === 'authorizing' && (
+              <button
+                type="button"
+                onClick={cancel}
+                className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-line bg-transparent text-sm font-medium text-text-muted transition-colors hover:border-gold hover:text-gold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+              >
+                Cancelar y volver a intentar
+              </button>
+            )}
           </div>
         ) : (
           <button

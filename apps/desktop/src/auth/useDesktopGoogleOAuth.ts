@@ -13,10 +13,13 @@ import {
 
 const DESKTOP_REDIRECT_TO = 'com.ultrathing.desktop://auth/callback';
 
+export type DesktopGoogleOAuthPhase = 'idle' | 'authorizing' | 'exchanging';
+
 export type DesktopGoogleOAuth = {
   start: () => Promise<void>;
   cancel: () => void;
   busy: boolean;
+  phase: DesktopGoogleOAuthPhase;
   error: string | null;
 };
 
@@ -48,18 +51,19 @@ function clearStoredPending(flowId: string): void {
 /** Coordina PKCE en el navegador del sistema y consume el deep link de regreso. */
 export function useDesktopGoogleOAuth(): DesktopGoogleOAuth {
   const [initialPending] = useState(loadInitialPending);
-  const [busy, setBusy] = useState(initialPending !== null);
+  const initialPhase: DesktopGoogleOAuthPhase = initialPending ? 'authorizing' : 'idle';
+  const [phase, setPhase] = useState<DesktopGoogleOAuthPhase>(initialPhase);
   const [error, setError] = useState<string | null>(null);
   const pendingRef = useRef<DesktopOAuthPending | null>(initialPending);
-  const busyRef = useRef(initialPending !== null);
+  const phaseRef = useRef<DesktopGoogleOAuthPhase>(initialPhase);
   const mountedRef = useRef(false);
   const operationRef = useRef(0);
   const handledUrlsRef = useRef(new Set<string>());
   const exchangingFlowIdsRef = useRef(new Set<string>());
 
-  const setBusyState = useCallback((next: boolean) => {
-    busyRef.current = next;
-    if (mountedRef.current) setBusy(next);
+  const setPhaseState = useCallback((next: DesktopGoogleOAuthPhase) => {
+    phaseRef.current = next;
+    if (mountedRef.current) setPhase(next);
   }, []);
 
   const consumeUrl = useCallback(
@@ -90,17 +94,18 @@ export function useDesktopGoogleOAuth(): DesktopGoogleOAuth {
       pendingRef.current = pending;
 
       if (!canExchangeDesktopOAuthCode(pending, callback.flowId, exchangingFlowIdsRef.current)) {
-        if (!pending) setBusyState(false);
+        if (!pending) setPhaseState('idle');
         return;
       }
 
       exchangingFlowIdsRef.current.add(callback.flowId);
+      setPhaseState('exchanging');
       try {
         await exchangeGoogleOAuthCode(callback.code);
         clearStoredPending(callback.flowId);
         if (pendingRef.current?.flowId === callback.flowId) {
           pendingRef.current = null;
-          if (mountedRef.current) setBusyState(false);
+          setPhaseState('idle');
         }
       } catch (callbackError) {
         clearStoredPending(callback.flowId);
@@ -108,14 +113,14 @@ export function useDesktopGoogleOAuth(): DesktopGoogleOAuth {
           pendingRef.current = null;
           if (mountedRef.current) {
             setError(readableError(callbackError));
-            setBusyState(false);
           }
+          setPhaseState('idle');
         }
       } finally {
         exchangingFlowIdsRef.current.delete(callback.flowId);
       }
     },
-    [setBusyState],
+    [setPhaseState],
   );
 
   const consumeUrls = useCallback(
@@ -154,10 +159,10 @@ export function useDesktopGoogleOAuth(): DesktopGoogleOAuth {
   }, [consumeUrls]);
 
   const start = useCallback(async () => {
-    if (busyRef.current) return;
+    if (phaseRef.current !== 'idle') return;
     const operation = ++operationRef.current;
     let flowId: string | null = null;
-    setBusyState(true);
+    setPhaseState('authorizing');
     setError(null);
     try {
       flowId = crypto.randomUUID();
@@ -172,20 +177,20 @@ export function useDesktopGoogleOAuth(): DesktopGoogleOAuth {
         if (flowId) clearStoredPending(flowId);
         if (flowId && pendingRef.current?.flowId === flowId) pendingRef.current = null;
         setError(readableError(startError));
-        setBusyState(false);
+        setPhaseState('idle');
       }
     }
-  }, [setBusyState]);
+  }, [setPhaseState]);
 
   const cancel = useCallback(() => {
-    if (!busyRef.current) return;
+    if (phaseRef.current !== 'authorizing') return;
     const flowId = pendingRef.current?.flowId;
     operationRef.current += 1;
     if (flowId) clearStoredPending(flowId);
     pendingRef.current = null;
-    setBusyState(false);
+    setPhaseState('idle');
     setError('Acceso cancelado. Podés volver a intentarlo.');
-  }, [setBusyState]);
+  }, [setPhaseState]);
 
-  return { start, cancel, busy, error };
+  return { start, cancel, busy: phase !== 'idle', phase, error };
 }
