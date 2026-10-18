@@ -8,6 +8,7 @@ const DESKTOP_REDIRECT_TO = 'com.ultrathing.desktop://auth/callback';
 
 export type DesktopGoogleOAuth = {
   start: () => Promise<void>;
+  cancel: () => void;
   busy: boolean;
   error: string | null;
 };
@@ -39,9 +40,8 @@ export function useDesktopGoogleOAuth(): DesktopGoogleOAuth {
       if (handledUrlsRef.current.has(rawUrl)) return;
       handledUrlsRef.current.add(rawUrl);
 
-      const operation = ++operationRef.current;
-      setBusyState(true);
-      setError(null);
+      if (!busyRef.current) return;
+      const operation = operationRef.current;
       try {
         const callback = parseDesktopOAuthCallback(rawUrl);
         if (callback.kind === 'error') throw new Error(callback.message);
@@ -109,5 +109,12 @@ export function useDesktopGoogleOAuth(): DesktopGoogleOAuth {
     }
   }, [setBusyState]);
 
-  return { start, busy, error };
+  const cancel = useCallback(() => {
+    if (!busyRef.current) return;
+    operationRef.current += 1;
+    setBusyState(false);
+    setError('Acceso cancelado. Podés volver a intentarlo.');
+  }, [setBusyState]);
+
+  return { start, cancel, busy, error };
 }

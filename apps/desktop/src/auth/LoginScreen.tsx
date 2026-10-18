@@ -13,7 +13,7 @@ function GoogleMark() {
 }
 
 /** Acceso único con Google. Supabase crea la cuenta en el primer ingreso. */
-export function LoginScreen({ start, busy, error }: DesktopGoogleOAuth) {
+export function LoginScreen({ start, cancel, busy, error }: DesktopGoogleOAuth) {
   return (
     <main className="grid min-h-screen place-items-center bg-base p-8">
       <Card className="w-full max-w-sm">
@@ -22,15 +22,29 @@ export function LoginScreen({ start, busy, error }: DesktopGoogleOAuth) {
         </h1>
         <p className="mb-5 text-sm text-text-muted">Accedé de forma segura con tu cuenta de Google.</p>
 
-        <button
-          type="button"
-          onClick={() => void start()}
-          disabled={busy}
-          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-line bg-elevated text-sm font-medium text-text transition-colors hover:border-gold hover:text-gold disabled:opacity-40"
-        >
-          <GoogleMark />
-          {busy ? 'Abriendo Google…' : 'Entrar con Google'}
-        </button>
+        {busy ? (
+          <div className="space-y-3">
+            <p role="status" aria-live="polite" className="text-center text-sm text-text-muted">
+              Esperando a Google…
+            </p>
+            <button
+              type="button"
+              onClick={cancel}
+              className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-line bg-transparent text-sm font-medium text-text-muted transition-colors hover:border-gold hover:text-gold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+            >
+              Cancelar y volver a intentar
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => void start()}
+            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-line bg-elevated text-sm font-medium text-text transition-colors hover:border-gold hover:text-gold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+          >
+            <GoogleMark />
+            Entrar con Google
+          </button>
+        )}
 
         <p className="mt-4 text-xs leading-relaxed text-text-faint">
           Si es tu primera vez, Google creará tu cuenta de UltraThing automáticamente.
