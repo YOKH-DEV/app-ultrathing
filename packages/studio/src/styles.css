@@ -1,0 +1,15 @@
+/* Estilos del studio: base de tldraw + ajustes de tema UltraThing (negro/dorado). */
+@import 'tldraw/tldraw.css';
+
+/* El contenedor del studio ocupa todo su hueco; el canvas se posiciona absoluto. */
+.ut-studio {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Acento dorado de UltraThing sobre el tema oscuro de tldraw. */
+.ut-studio .tl-container {
+  --color-selected: #d4af37;
+  --color-focus: #d4af37;
+}

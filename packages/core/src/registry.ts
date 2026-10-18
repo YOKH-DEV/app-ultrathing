@@ -14,7 +14,9 @@ export interface Feature {
 const registry = new Map<string, Feature>();
 
 export function registerFeature(f: Feature): Feature {
-  if (registry.has(f.id)) throw new Error(`Feature duplicado: ${f.id}`);
+  // Idempotente: al recargar en caliente (HMR) el módulo de features se re-ejecuta y
+  // vuelve a registrar los mismos ids; sobrescribir (en vez de lanzar) evita romper el
+  // registro y que un módulo recién añadido no aparezca hasta reiniciar la app.
   registry.set(f.id, f);
   return f;
 }

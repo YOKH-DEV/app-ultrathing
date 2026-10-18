@@ -1,3 +1,15 @@
 @import '@ultrathing/ui/tokens.css';
 @import 'tailwindcss';
 @config '../tailwind.config.js';
+
+html {
+  scrollbar-color: var(--gold-deep) var(--bg-elevated);
+}
+::selection {
+  background: rgba(229, 185, 78, 0.35);
+  color: var(--text);
+}
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}

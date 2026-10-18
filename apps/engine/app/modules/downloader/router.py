@@ -5,10 +5,38 @@ from fastapi import APIRouter, Header
 
 from app.core.jobs import create_job, run_job
 from app.core.supabase import user_id_from_token
-from .schemas import StartDownload
+from . import history
+from .schemas import HistoryItem, StartDownload
 from .service import download
 
 router = APIRouter(prefix="/modules/downloader", tags=["downloader"])
+
+
+def _user_id(authorization: str | None) -> str | None:
+    token = authorization.removeprefix("Bearer ").strip() if authorization else None
+    if not token:
+        return None
+    try:
+        return user_id_from_token(token)
+    except Exception:  # noqa: BLE001 — sin sesión no hay historial, no 500
+        return None
+
+
+@router.get("/history")
+async def get_history(authorization: str | None = Header(default=None)) -> list[HistoryItem]:
+    """Historial del usuario autenticado. Sin token: lista vacía (no el de otros)."""
+    user_id = _user_id(authorization)
+    if not user_id:
+        return []
+    return [HistoryItem(**item) for item in history.read(user_id)]
+
+
+@router.delete("/history")
+async def clear_history(authorization: str | None = Header(default=None)) -> dict[str, str]:
+    user_id = _user_id(authorization)
+    if user_id:
+        history.clear(user_id)
+    return {"status": "ok"}
 
 
 @router.post("/start")
@@ -26,6 +54,11 @@ async def start(
     job = create_job(module="downloader", user_id=user_id, token=token if user_id else None)
     # Se lanza en segundo plano: devolvemos el id al instante, la UI escucha por SSE.
     asyncio.create_task(
-        run_job(job, lambda j, report: download(str(body.url), report, user_id, token)),
+        run_job(
+            job,
+            lambda j, report: download(
+                str(body.url), report, user_id, token, body.format, body.quality, body.dest
+            ),
+        ),
     )
     return {"job_id": job.id}
