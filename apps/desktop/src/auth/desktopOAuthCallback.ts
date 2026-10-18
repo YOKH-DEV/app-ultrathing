@@ -1,11 +1,21 @@
+import { isDesktopOAuthFlowId } from './desktopOAuthPending';
+
 const CALLBACK_PROTOCOL = 'com.ultrathing.desktop:';
 const CALLBACK_HOST = 'auth';
 const CALLBACK_PATH = '/callback';
 const ALLOWED_PARAMETERS = new Set(['code', 'error', 'error_code', 'error_description']);
 
 export type DesktopOAuthCallback =
-  | { kind: 'code'; code: string }
-  | { kind: 'error'; message: string };
+  { kind: 'code'; code: string; flowId: string } | { kind: 'error'; message: string };
+
+function parseFlowId(hash: string): string | null {
+  if (hash === '') return null;
+  const match = /^#flow=([0-9a-f-]+)$/i.exec(hash);
+  if (!match || !isDesktopOAuthFlowId(match[1])) {
+    throw new Error('UltraThing rechazó una correlación de acceso inválida.');
+  }
+  return match[1];
+}
 
 /** Valida el deep link antes de entregar el código de un solo uso a Supabase. */
 export function parseDesktopOAuthCallback(rawUrl: string): DesktopOAuthCallback {
@@ -27,9 +37,7 @@ export function parseDesktopOAuthCallback(rawUrl: string): DesktopOAuthCallback 
     throw new Error('UltraThing rechazó un callback de Google no permitido.');
   }
 
-  if (url.hash !== '') {
-    throw new Error('UltraThing rechazó un callback que exponía credenciales.');
-  }
+  const flowId = parseFlowId(url.hash);
 
   const parameterCounts = new Map<string, number>();
   for (const key of url.searchParams.keys()) {
@@ -65,6 +73,9 @@ export function parseDesktopOAuthCallback(rawUrl: string): DesktopOAuthCallback 
   if (!code?.trim()) {
     throw new Error('El callback de Google no contiene un código válido.');
   }
+  if (!flowId) {
+    throw new Error('El callback de Google no contiene una correlación válida.');
+  }
 
-  return { kind: 'code', code };
+  return { kind: 'code', code, flowId };
 }

@@ -3,6 +3,13 @@ import { getCurrent, onOpenUrl } from '@tauri-apps/plugin-deep-link';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { exchangeGoogleOAuthCode, prepareGoogleOAuth } from '@ultrathing/api-client';
 import { parseDesktopOAuthCallback } from './desktopOAuthCallback';
+import {
+  canExchangeDesktopOAuthCode,
+  clearDesktopOAuthPending,
+  loadDesktopOAuthPending,
+  saveDesktopOAuthPending,
+  type DesktopOAuthPending,
+} from './desktopOAuthPending';
 
 const DESKTOP_REDIRECT_TO = 'com.ultrathing.desktop://auth/callback';
 
@@ -21,14 +28,34 @@ function readableError(error: unknown): string {
   return raw || 'No se pudo completar el acceso con Google. Intentá de nuevo.';
 }
 
+function loadInitialPending(): DesktopOAuthPending | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return loadDesktopOAuthPending(window.localStorage);
+  } catch {
+    return null;
+  }
+}
+
+function clearStoredPending(flowId: string): void {
+  try {
+    clearDesktopOAuthPending(window.localStorage, flowId);
+  } catch {
+    // El estado en memoria sigue aislando el intento; el error original conserva prioridad.
+  }
+}
+
 /** Coordina PKCE en el navegador del sistema y consume el deep link de regreso. */
 export function useDesktopGoogleOAuth(): DesktopGoogleOAuth {
-  const [busy, setBusy] = useState(false);
+  const [initialPending] = useState(loadInitialPending);
+  const [busy, setBusy] = useState(initialPending !== null);
   const [error, setError] = useState<string | null>(null);
-  const busyRef = useRef(false);
+  const pendingRef = useRef<DesktopOAuthPending | null>(initialPending);
+  const busyRef = useRef(initialPending !== null);
   const mountedRef = useRef(false);
   const operationRef = useRef(0);
   const handledUrlsRef = useRef(new Set<string>());
+  const exchangingFlowIdsRef = useRef(new Set<string>());
 
   const setBusyState = useCallback((next: boolean) => {
     busyRef.current = next;
@@ -40,18 +67,52 @@ export function useDesktopGoogleOAuth(): DesktopGoogleOAuth {
       if (handledUrlsRef.current.has(rawUrl)) return;
       handledUrlsRef.current.add(rawUrl);
 
-      if (!busyRef.current) return;
-      const operation = operationRef.current;
+      let callback;
       try {
-        const callback = parseDesktopOAuthCallback(rawUrl);
-        if (callback.kind === 'error') throw new Error(callback.message);
-        await exchangeGoogleOAuthCode(callback.code);
-        if (mountedRef.current && operationRef.current === operation) setBusyState(false);
+        callback = parseDesktopOAuthCallback(rawUrl);
       } catch (callbackError) {
-        if (mountedRef.current && operationRef.current === operation) {
-          setError(readableError(callbackError));
-          setBusyState(false);
+        if (mountedRef.current) setError(readableError(callbackError));
+        return;
+      }
+
+      if (callback.kind === 'error') {
+        if (mountedRef.current) setError(callback.message);
+        return;
+      }
+
+      let pending: DesktopOAuthPending | null;
+      try {
+        pending = loadDesktopOAuthPending(window.localStorage);
+      } catch (storageError) {
+        if (mountedRef.current) setError(readableError(storageError));
+        return;
+      }
+      pendingRef.current = pending;
+
+      if (!canExchangeDesktopOAuthCode(pending, callback.flowId, exchangingFlowIdsRef.current)) {
+        if (!pending) setBusyState(false);
+        return;
+      }
+
+      exchangingFlowIdsRef.current.add(callback.flowId);
+      try {
+        await exchangeGoogleOAuthCode(callback.code);
+        clearStoredPending(callback.flowId);
+        if (pendingRef.current?.flowId === callback.flowId) {
+          pendingRef.current = null;
+          if (mountedRef.current) setBusyState(false);
         }
+      } catch (callbackError) {
+        clearStoredPending(callback.flowId);
+        if (pendingRef.current?.flowId === callback.flowId) {
+          pendingRef.current = null;
+          if (mountedRef.current) {
+            setError(readableError(callbackError));
+            setBusyState(false);
+          }
+        }
+      } finally {
+        exchangingFlowIdsRef.current.delete(callback.flowId);
       }
     },
     [setBusyState],
@@ -95,14 +156,21 @@ export function useDesktopGoogleOAuth(): DesktopGoogleOAuth {
   const start = useCallback(async () => {
     if (busyRef.current) return;
     const operation = ++operationRef.current;
+    let flowId: string | null = null;
     setBusyState(true);
     setError(null);
     try {
-      const authorizeUrl = await prepareGoogleOAuth(DESKTOP_REDIRECT_TO);
+      flowId = crypto.randomUUID();
+      const pending = { flowId, createdAt: Date.now() };
+      const authorizeUrl = await prepareGoogleOAuth(`${DESKTOP_REDIRECT_TO}#flow=${flowId}`);
       if (!mountedRef.current || operationRef.current !== operation) return;
+      saveDesktopOAuthPending(window.localStorage, pending);
+      pendingRef.current = pending;
       await openUrl(authorizeUrl);
     } catch (startError) {
       if (mountedRef.current && operationRef.current === operation) {
+        if (flowId) clearStoredPending(flowId);
+        if (flowId && pendingRef.current?.flowId === flowId) pendingRef.current = null;
         setError(readableError(startError));
         setBusyState(false);
       }
@@ -111,7 +179,10 @@ export function useDesktopGoogleOAuth(): DesktopGoogleOAuth {
 
   const cancel = useCallback(() => {
     if (!busyRef.current) return;
+    const flowId = pendingRef.current?.flowId;
     operationRef.current += 1;
+    if (flowId) clearStoredPending(flowId);
+    pendingRef.current = null;
     setBusyState(false);
     setError('Acceso cancelado. Podés volver a intentarlo.');
   }, [setBusyState]);
