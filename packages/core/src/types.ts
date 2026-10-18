@@ -25,5 +25,3 @@ export type Job = z.infer<typeof Job>;
 export type DesignBackground =
   | { type: 'color'; value: string }
   | { type: 'image'; value: string };
-
-
